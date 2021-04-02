@@ -10,7 +10,11 @@ class Parts(commands.Cog):
 
     @commands.group(invoke_without_command=True, aliases=["pm"], description="Lists all PartMatcher commands.")
     async def partmatcher(self, ctx):
-        pass
+        embed = discord.Embed(
+            title = "PartMatcher Commands",
+            description = '\n'.join([f"`{command.name}{' ' + command.signature if command.signature else ''}` - {command.description}" for command in self.partmatcher.commands])
+        )
+        await ctx.send(embed=embed)
 
 
     @partmatcher.command(description="Submit a part for verification.")
