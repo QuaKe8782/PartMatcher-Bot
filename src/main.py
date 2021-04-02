@@ -5,16 +5,18 @@ from os import listdir
 
 
 config = ConfigParser()
-config.read("config.ini")
+config.read("./config.ini")
 
+prefix = config.get("Bot", "prefix")
 
-bot = commands.Bot(command_prefix=config.get("Bot", "Prefix"))
+bot = commands.Bot(command_prefix=prefix)
 production_cogs = []
 
 
 @bot.event
 async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="PartMatcher"))
+
 
 def main():
     for file in listdir("cogs"):
@@ -26,6 +28,7 @@ def main():
         bot.load_extension(f"cogs.{filename}")
         print(f"Loaded cogs.{filename}")
     print("Bot is ready")
-    bot.run(config.get("Discord", "Token"))
+    bot.run(config.get("Discord", "token"))
+
 
 main()
