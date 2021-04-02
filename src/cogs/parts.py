@@ -7,10 +7,13 @@ class Parts(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    
-    @commands.command()
-    async def test(self, ctx):
+    @commands.group(invoke_without_command=True)
+    async def partmatcher(self, ctx):
         await ctx.send("test")
+
+    @partmatcher.command()
+    async def submit(self, ctx):
+        await ctx.send("submit")
 
 
 def setup(bot):
