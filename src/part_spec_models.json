@@ -1,0 +1,132 @@
+{
+    "CPU": {
+        "_note": "All clocks should be in GHz.",
+        "Base Clock": "2.9 GHz | 3.4 GHz",
+        "Boost Clock": "4.3 GHz | 5.1 GHz",
+        "Cores": "6 | 16",
+        "Threads": "6 | 32",
+        "TDP": "65W | 125W",
+        "Chipset": "LGA1200 | AM4",
+        "Integrated Graphics": "UHD Graphics 630 | Radeon Vega 8 | N/A",
+        "Includes CPU Cooler": "Yes | Yes - AMD Wraith Stealth | No",
+        "L1 Cache": "6x 64KB",
+        "L2 Cache": "6x 256KB",
+        "L3 Cache": "12MB",
+        "Lithography": "14nm | 7nm",
+        "Supports Overclocking": "No | Yes"
+    },
+
+    "Graphics Card": {
+        "_note": "All clocks should be in MHz, dimensions should be in mm.",
+        "Chipset": "RTX 3090 | RX 6900 XT",
+        "Base Clock": "1400 MHz | 1825 MHz",
+        "Boost Clock": "1700 MHz | 2250 MHz",
+        "VRAM": "24GB | 16GB",
+        "VRAM Type": "GDDR6X | GDDR6",
+        "VRAM Clock": " | 2000 MHz",
+        "VRAM Interface": "384-bit | 256-bit",
+        "PCIe Interface": "PCIe 4.0 x16 | PCIe 4.0 x16",
+        "TDP": "350W | 300W",
+        "External Power": ["2x PCIe 8-pin", "2x PCIe 8-pin"],
+        "Cooling": "2 fans | 3 fans",
+        "Expansion Slots": "3 slots | 2.5 slots",
+        "Dimensions": "313 x 138 mm",
+        "Ports": ["1x HDMI", "2x DisplayPort", "1x USB-C"],
+        "Colours": ["Black", "Silver"],
+        "Ray Tracing": ["Yes", "Yes"],
+        "Lithography": "8nm | 7nm"
+    },
+
+    "Memory": {
+        "_note": "'Capacity' is the total value of all the modules combined. All capacities should be in GB.",
+        "Capacity": "16GB | 32GB",
+        "Modules": "2x8GB | 1x16GB",
+        "Clock": "3200MHz | 1600MHz",
+        "CAS Latency": "16 | 18",
+        "Timings": "16-18-18-38 | 20-23-23-43",
+        "Voltage": "1.35v",
+        "Colours": ["Red", "Black"]
+
+    },
+
+    "SSD": {
+        "_note": "Capacities should be in GB.",
+        "Capacity": "500GB | 1024GB",
+        "Interface": "SATA 3 | NVMe PCIe 3 | NVMe PCIe 4",
+        "Form Factor": "M.2-2280 | 2.5 inch",
+        "Controller": "Silicon Motion SM2258 | Marvell 88SS1074",
+        "DRAM": "Yes - 512MB | No",
+        "HMB": "N/A | No | Yes",
+        "NAND Type": "TLC | QLC | SLC",
+        "NAND Dimension": "3D | 2D",
+        "NAND Layers": "64 | 32"
+    },
+
+    "HDD": {
+        "_note": "Capacities should be in GB",
+        "Capacity": "1024GB",
+        "Interface": "SATA 3 | USB 3",
+        "Cache": "16MB | 64MB",
+        "Rotational Speed": "5400 RPM | 7200 RPM",
+        "Form Factor": "3.5 inch | 2.5 inch"
+    },
+
+    "Motherboard": {
+        "_note": "All capacities should be in GB and all clocks should be in MHz. Dimensions should be in mm.",
+        "Form Factor": "ATX | Micro ATX | Mini ITX",
+        "Dimensions": "244 x 244 mm",
+        "Chipset": "Intel B560 | AMD X570",
+        "Socket": "LGA1200 | AM4",
+        "Memory Slots": "2 | 4",
+        "Memory Type": "DDR4 | DDR3",
+        "Max Memory Capacity": "128GB | 64GB",
+        "Max Supported RAM Speed": "3200MHz | 2666MHz",
+        "PCIe Slots": ["2x PCIe x16", "PCIe x1"],
+        "M.2 Slots": "0 | 2",
+        "SATA Ports": ["4x SATA 3"],
+        "Case Fan Headers": "0 | 2 | 4" ,
+        "Built-in WiFi": "Yes - WiFi 5 | Yes - WiFi 6 | No",
+        "Ethernet": "1x Gigabit",
+        "ECC": "Yes | No",
+        "RAID": "Yes | No",
+        "USB Ports": ["4x USB 3 Type A", "2x USB 2 Type A", "USB 3 Type C"],
+        "Overclocking": "Yes | No",
+        "Colours": ["Black", "Red"]
+    },
+
+    "Power Supply": {
+        "_note": "Dimensions should be in mm.",
+        "Wattage": "550W | 700W",
+        "Form Factor": "ATX | SFX",
+        "80+ Rating": "None | Bronze | Gold",
+        "Protections": ["UDP", "OOP", "UVP"],
+        "Dimensions": "140 x 150 x 86 mm",
+        "EPS Connectors": "1 | 2",
+        "PCIe Power Connectors": "2 | 3",
+        "SATA Connectors": "4 | 8",
+        "Molex Connectors": "4 | 6",
+        "Sleeved Cables": "Yes | No",
+        "Fan Size": "120mm | 140mm",
+        "Fan Speed": "2400 RPM",
+        "Fan Bearing": "Sleeve | Dual Ball",
+        "Colours": ["Black"]
+    },
+
+    "Case": {
+        "_note": "All dimensions should be in mm.",
+        "Supported Motherboard Form Factors": ["ATX", "Micro ATX", "Mini ITX"],
+        "CPU Cooler Clearance": "161mm | 150mm",
+        "Graphics Card Clearance": "327mm",
+        "Power Supply Clearance": "180mm",
+        "PCIe Expansion Slots": "4 | 7",
+        "Included Fans": "0 | 2 | 4",
+        "USB Ports": ["2x USB 2 Type A", "USB 3 Type A"],
+        "Front Panel": "Mesh | Solid | Tempered Glass",
+        "Side Panel": "Acrylic | Tempered Glass",
+        "Power Supply Shroud": "Yes | No",
+        "2.5 Inch Drive Spots": "2 | 4",
+        "3.5 Inch Drive Spots": "2 | 4",
+        "Radiator Support": ["1x 120mm", "1x 240mm", "1x 360mm"],
+        "Colours": ["White", "Black"]
+    }
+}
