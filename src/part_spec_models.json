@@ -1,4 +1,12 @@
 {
+    "_part": {
+        "_contributors": [],
+        "Manufacturer": "AMD | Intel | Nvidia",
+        "Name": "Ryzen 5 3600 | Core i5-10400F",
+        "Model Number": ["Ryzen 5 3600", "100-100000031BOX"]
+    },
+
+
     "CPU": {
         "_note": "All clocks should be in GHz.",
         "Base Clock": "2.9 GHz | 3.4 GHz",
@@ -6,7 +14,7 @@
         "Cores": "6 | 16",
         "Threads": "6 | 32",
         "TDP": "65W | 125W",
-        "Chipset": "LGA1200 | AM4",
+        "Socket": "LGA1200 | AM4",
         "Integrated Graphics": "UHD Graphics 630 | Radeon Vega 8 | N/A",
         "Includes CPU Cooler": "Yes | Yes - AMD Wraith Stealth | No",
         "L1 Cache": "6x 64KB",
