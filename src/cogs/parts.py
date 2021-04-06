@@ -1,9 +1,10 @@
 import discord
 from discord.ext import commands
-from pymongo import MongoClient
 from utils import Embed, MessageTimeout, UserCancel
 from json import load
 import asyncio
+from random import choice
+from string import ascii_letters, digits
 
 
 with open("part_spec_models.json") as file:
@@ -14,15 +15,24 @@ input_types = {
     "list": "A group of values seperated by a comma."
 }
 
+chars = list(ascii_letters + digits)
 
-class Parts(commands.Cog):
+
+class PartInput(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def gen_id(self, length):
+        return ''.join([choice(chars) for i in range(length)])
 
-    async def assign(self, assign_object, assign_dict, assign_key, ctx):
-        embed = Embed(title="")
+    async def assign(self, assign_dict, assign_key, ctx):
+        assign_object = {}
 
+        if assign_dict[assign_key].get("_note"):
+            embed = Embed(
+                title="Note", description=assign_dict[assign_key]["_note"])
+            await ctx.reply(embed=embed)
+            await asyncio.sleep(3)
 
         for category in assign_dict[assign_key]:
             if category.startswith("_"):
@@ -40,36 +50,38 @@ class Parts(commands.Cog):
                 examples.append(', '.join(expected_value))
             else:
                 raise ValueError("Invalid example value!")
-            
-            embed = Embed(title = f"Category: {category}")
+
+            embed = Embed(title=f"Category: {category}")
 
             embed.add_field(
-                name = "Input Type",
-                value = f"`{input_type}` - {input_types[input_type]}",
-                inline = False
+                name="Input Type",
+                value=f"`{input_type}` - {input_types[input_type]}",
+                inline=False
             )
 
             embed.add_field(
-                name = "Example(s)",
-                value = '\n'.join([f"`{example}`" for example in examples]),
-                inline = False
+                name="Example(s)",
+                value='\n'.join([f"`{example}`" for example in examples]),
+                inline=False
             )
 
             prev_message = await ctx.reply(embed=embed)
 
-            check = lambda m: m.author == ctx.author and m.channel == ctx.channel
+            def check(
+                m): return m.author == ctx.author and m.channel == ctx.channel
 
             try:
                 message = await self.bot.wait_for("message", check=check, timeout=30)
             except asyncio.TimeoutError:
-                embed = Embed(title="You took too long to respond! Cancelling submit request.")
+                embed = Embed(
+                    title="You took too long to respond! Cancelling submit request.")
                 await ctx.reply(embed=embed)
                 raise MessageTimeout()
-            
+
             await prev_message.delete()
 
             if message.content.lower() in ("stop", "exit", "cancel", "terminate", "break", "arrêter"):
-                embed = Embed(title="Cancelled part submission.")
+                embed = Embed(title="Cancelled part submission")
                 await ctx.reply(embed=embed)
                 raise UserCancel()
 
@@ -85,8 +97,9 @@ class Parts(commands.Cog):
     @commands.group(invoke_without_command=True, aliases=["pm"], description="Lists all PartMatcher commands.")
     async def partmatcher(self, ctx):
         embed = Embed(
-            title = "PartMatcher Commands",
-            description = '\n'.join([f"`{command.name}{' ' + command.signature if command.signature else ''}` - {command.description}" for command in self.partmatcher.commands])
+            title="PartMatcher Commands",
+            description='\n'.join(
+                [f"`{command.name}{' ' + command.signature if command.signature else ''}` - {command.description if command.description else '(No description provided)'}" for command in self.partmatcher.commands])
         )
         await ctx.send(embed=embed)
 
@@ -94,10 +107,11 @@ class Parts(commands.Cog):
     @partmatcher.command(description="Submit a part for verification.")
     async def submit(self, ctx):
         embed = Embed(
-            title = "What part type would you like to submit?",
-            description = ' '.join([f"`{part}`" for part in part_spec_models if not part.startswith("_")])
+            title="What part type would you like to submit?",
+            description=' '.join(
+                [f"`{part}`" for part in part_spec_models if not part.startswith("_")])
         )
-        check = lambda m: m.author == ctx.author and m.channel == ctx.channel
+        def check(m): return m.author == ctx.author and m.channel == ctx.channel
 
         prev_msg = await ctx.reply(embed=embed)
         embed.title = "That's is not a valid part type! Please choose from the below types."
@@ -107,7 +121,8 @@ class Parts(commands.Cog):
             try:
                 message = await self.bot.wait_for("message", check=check, timeout=30)
             except asyncio.TimeoutError:
-                embed = Embed(title="You took too long to respond! Cancelling submit request.")
+                embed = Embed(
+                    title="You took too long to respond! Cancelling submit request.")
                 await ctx.reply(embed=embed)
                 return
 
@@ -115,23 +130,50 @@ class Parts(commands.Cog):
                 if variation in part_spec_models:
                     waiting = False
                     break
-            
+
             if not waiting:
                 break
 
             await prev_msg.delete()
             prev_msg = await message.reply(embed=embed)
-        
-        new_part = {}
 
-        for key in ("_part", variation):
+        for count, key in enumerate(("_part", variation)):
             try:
-                new_part = await self.assign(new_part, part_spec_models, key, ctx)
-            except (UserCancel, MessageTimeout) as e:
+                if count == 0:
+                    new_part = await self.assign(part_spec_models, key, ctx)
+                else:
+                    new_part["specs"] = await self.assign(part_spec_models, key, ctx)
+            except (UserCancel, MessageTimeout):
                 return
 
-        await ctx.send(new_part)
+        new_part["Type"] = variation
+
+        while True:
+            new_id = self.gen_id(6)
+            if not self.bot.db["DiscordBot"]["Submissions"].find_one({"part_id": new_id}):
+                new_part["part_id"] = new_id
+                self.bot.db["DiscordBot"]["Submissions"].insert_one(new_part)
+                break
+
+
+    @partmatcher.command()
+    async def info(self, ctx, *, search_term):
+        query = list(self.bot.db["PartsDB"]["Parts"].find({"$text": {"$search": search_term}}))
+
+        if not query:
+            embed = Embed(
+                title = f"No results found for '{search_term}'",
+                description = "Perhaps you made a typo?"
+            )
+
+        else:
+            embed = Embed(
+                title = f"Results for '{search_term}':",
+                description = '\n'.join([part["name"] for part in query])
+            )
+
+        await ctx.send(embed=embed)
 
 
 def setup(bot):
-    bot.add_cog(Parts(bot))
+    bot.add_cog(PartInput(bot))
