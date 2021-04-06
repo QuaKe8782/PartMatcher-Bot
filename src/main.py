@@ -3,14 +3,15 @@ import discord
 from discord.ext import commands
 from os import listdir
 from utils import Embed
+from pymongo import MongoClient
 
 
 config = ConfigParser()
 config.read("./config.ini")
 
 prefix = config.get("Bot", "prefix")
-
 bot = commands.Bot(command_prefix=prefix)
+bot.db = MongoClient(config.get("MongoDB", "connection_string"))
 
 production_cogs = []
 
