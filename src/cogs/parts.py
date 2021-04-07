@@ -147,8 +147,37 @@ class PartInput(commands.Cog):
             except (UserCancel, MessageTimeout):
                 return
 
+        embed = Embed(
+            title = "Part Selection Completed"
+        )
+
+        for key in new_part:
+            if isinstance(new_part[key], str):
+                value = new_part[key]
+            elif isinstance(new_part[key], list):
+                value = '\n'.join(new_part[key])
+            elif isinstance(new_part[key], dict):
+                value = '\n'.join([f"**{spec_key}**: {spec_value}" for spec_key, spec_value in new_part.items()])
+
+            embed.add_field(name=key, value=value)
+    
+        embed.set_footer(text="Send 'confirm' in the chat in the next 60 seconds to confirm your submission.")
+
+        message = await ctx.reply(embed=embed)
+
+        check = lambda m: m == ctx.author and m.channel == ctx.channel
+
+        try:
+            await self.bot.wait_for("message", check=check, timeout=60)
+        except asyncio.TimeoutError:
+            embed = Embed(title="Submission timed out.", description="You failed to respond within 60 seconds.")
+            await message.edit(embed=embed)
+
+
         new_part["Type"] = variation
         new_part["_created_at"] = datetime.utcnow()
+        new_part["Contributors"].append(ctx.author.id)
+
 
         while True:
             new_id = self.gen_id(6)
@@ -157,7 +186,6 @@ class PartInput(commands.Cog):
                 self.bot.db["DiscordBot"]["Submissions"].insert_one(new_part)
             
                 break
-
 
 
     @partmatcher.command()
