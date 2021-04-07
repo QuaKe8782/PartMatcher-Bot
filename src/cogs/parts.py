@@ -147,9 +147,7 @@ class PartInput(commands.Cog):
             except (UserCancel, MessageTimeout):
                 return
 
-        embed = Embed(
-            title = "Part Selection Completed"
-        )
+        embed = Embed(title = "Part Selection Completed")
 
         for key in new_part:
             if isinstance(new_part[key], str):
@@ -177,6 +175,10 @@ class PartInput(commands.Cog):
         new_part["Type"] = variation
         new_part["_created_at"] = datetime.utcnow()
         new_part["Contributors"].append(ctx.author.id)
+
+
+
+        
 
 
         while True:
