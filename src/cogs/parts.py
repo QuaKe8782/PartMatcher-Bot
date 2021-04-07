@@ -5,6 +5,7 @@ from json import load
 import asyncio
 from random import choice
 from string import ascii_letters, digits
+from datetime import datetime
 
 
 with open("part_spec_models.json") as file:
@@ -147,13 +148,16 @@ class PartInput(commands.Cog):
                 return
 
         new_part["Type"] = variation
+        new_part["_created_at"] = datetime.utcnow()
 
         while True:
             new_id = self.gen_id(6)
             if not self.bot.db["DiscordBot"]["Submissions"].find_one({"part_id": new_id}):
                 new_part["part_id"] = new_id
                 self.bot.db["DiscordBot"]["Submissions"].insert_one(new_part)
+            
                 break
+
 
 
     @partmatcher.command()
