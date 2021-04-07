@@ -9,9 +9,14 @@ from pymongo import MongoClient
 config = ConfigParser()
 config.read("./config.ini")
 
-prefix = config.get("Bot", "prefix")
-bot = commands.Bot(command_prefix=prefix)
+
+bot = commands.Bot(command_prefix=config.get("Bot", "prefix"))
+
+
+# "botvars"
 bot.db = MongoClient(config.get("MongoDB", "connection_string"))
+bot.verification_channel = config.get("Discord", "verification_channel")
+
 
 production_cogs = []
 
