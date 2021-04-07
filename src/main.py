@@ -15,7 +15,10 @@ bot = commands.Bot(command_prefix=config.get("Bot", "prefix"))
 
 # "botvars"
 bot.db = MongoClient(config.get("MongoDB", "connection_string"))
-bot.verification_channel = config.get("Discord", "verification_channel")
+bot.pm_discord = {
+    "pm_server": int(config.get("Discord", "pm_server")),
+    "verification_channel": int(config.get("Discord", "verification_channel"))
+}
 
 
 production_cogs = []
