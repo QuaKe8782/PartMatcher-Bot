@@ -3,7 +3,8 @@
         "_contributors": [],
         "Manufacturer": "AMD | Intel | Nvidia",
         "Name": "Ryzen 5 3600 | Core i5-10400F",
-        "Model Number": ["Ryzen 5 3600", "100-100000031BOX"]
+        "Model Number": ["Ryzen 5 3600", "100-100000031BOX"],
+        "Notes": ["The Ryzen 9 5900X is a much better deal | A good B550 board will be sufficient to run this processor."]
     },
 
 
