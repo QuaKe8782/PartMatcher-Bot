@@ -33,7 +33,9 @@ class PartInput(commands.Cog):
 
         if assign_dict[assign_key].get("_note"):
             embed = Embed(
-                title="Note", description=assign_dict[assign_key]["_note"])
+                title="Note", description=assign_dict[assign_key]["_note"],
+                colour=discord.Colour.red()
+            )
             await ctx.reply(embed=embed)
             await asyncio.sleep(3)
 
