@@ -3,8 +3,7 @@ import discord
 from discord.ext import commands
 from os import listdir
 from utils import Embed
-from pymongo import MongoClient
-
+from motor.motor_asyncio import AsyncIOMotorClient
 
 config = ConfigParser()
 config.read("./config.ini")
@@ -14,7 +13,7 @@ bot = commands.Bot(command_prefix=config.get("Bot", "prefix"))
 
 
 # "botvars"
-bot.db = MongoClient(config.get("MongoDB", "connection_string"))
+bot.db = AsyncIOMotorClient(config.get("MongoDB", "connection_string"))
 bot.pm_discord = {
     "pm_server": int(config.get("Discord", "pm_server")),
     "verification_channel": int(config.get("Discord", "verification_channel"))
