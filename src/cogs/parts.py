@@ -23,8 +23,10 @@ class PartInput(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+
     def gen_id(self, length):
         return ''.join([choice(chars) for i in range(length)])
+
 
     async def assign(self, assign_dict, assign_key, ctx):
         assign_object = {}
@@ -157,7 +159,7 @@ class PartInput(commands.Cog):
             elif isinstance(new_part[key], dict):
                 value = '\n'.join([f"**{spec_key}**: {spec_value}" for spec_key, spec_value in new_part.items()])
 
-            embed.add_field(name=key, value=value)
+            embed.add_field(name=key, value=value, inline=False)
     
         embed.set_footer(text="Send 'confirm' in the chat in the next 60 seconds to confirm your submission.")
 
@@ -171,28 +173,30 @@ class PartInput(commands.Cog):
             embed = Embed(title="Submission timed out.", description="You failed to respond within 60 seconds.")
             await message.edit(embed=embed)
 
-
         new_part["Type"] = variation
         new_part["_created_at"] = datetime.utcnow()
         new_part["Contributors"].append(ctx.author.id)
 
 
+        server = self.bot.get_guild(self.bot.pm_discord["pm_server"])
+        channel = server.get_channel(self.bot.pm_discord["verification_channel"])
 
-        
 
+        embed.set_author(name=ctx.message.author, icon_url=ctx.message.author.avatar_url)
+        embed.title = "Part Submission"
 
         while True:
             new_id = self.gen_id(6)
-            if not self.bot.db["DiscordBot"]["Submissions"].find_one({"part_id": new_id}):
+            if not await self.bot.db["DiscordBot"]["Submissions"].find_one({"part_id": new_id}):
                 new_part["part_id"] = new_id
-                self.bot.db["DiscordBot"]["Submissions"].insert_one(new_part)
+                await self.bot.db["DiscordBot"]["Submissions"].insert_one(new_part)
             
                 break
 
 
     @partmatcher.command()
     async def info(self, ctx, *, search_term):
-        query = list(self.bot.db["PartsDB"]["Parts"].find({"$text": {"$search": search_term}}))
+        query = list(await self.bot.db["PartsDB"]["Parts"].find({"$text": {"$search": search_term}}))
 
         if not query:
             embed = Embed(
