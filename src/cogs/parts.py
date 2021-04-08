@@ -54,7 +54,7 @@ class PartInput(commands.Cog):
             else:
                 raise ValueError("Invalid example value!")
 
-            embed = Embed(title=f"Category: {category}")
+            embed = Embed(title=f"Category - {category}")
 
             embed.add_field(
                 name="Input Type",
@@ -145,13 +145,13 @@ class PartInput(commands.Cog):
                 if count == 0:
                     new_part = await self.assign(part_spec_models, key, ctx)
                 else:
-                    new_part["specs"] = await self.assign(part_spec_models, key, ctx)
+                    new_part["Specs"] = await self.assign(part_spec_models, key, ctx)
             except (UserCancel, MessageTimeout):
                 return
 
         embed = Embed(title="Part Selection Completed")
 
-        new_part["specs"].pop("_note", None)
+        new_part["Specs"].pop("_note", None)
 
         for key in new_part:
             if key.startswith("_"):
