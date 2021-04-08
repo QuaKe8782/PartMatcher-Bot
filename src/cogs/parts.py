@@ -74,7 +74,7 @@ class PartInput(commands.Cog):
                 m): return m.author == ctx.author and m.channel == ctx.channel
 
             try:
-                message = await self.bot.wait_for("message", check=check, timeout=30)
+                message = await self.bot.wait_for("message", check=check, timeout=60)
             except asyncio.TimeoutError:
                 embed = Embed(
                     title="You took too long to respond! Cancelling submit request.")
@@ -151,13 +151,18 @@ class PartInput(commands.Cog):
 
         embed = Embed(title="Part Selection Completed")
 
+        new_part["specs"].pop("_note", None)
+
         for key in new_part:
+            if key.startswith("_"):
+                continue
+
             if isinstance(new_part[key], str):
                 value = new_part[key]
             elif isinstance(new_part[key], list):
                 value = '\n'.join(new_part[key])
             elif isinstance(new_part[key], dict):
-                value = '\n'.join([f"**{spec_key}**: {spec_value}" for spec_key, spec_value in new_part.items()])
+                value = '\n'.join([f"**{spec_key}**: {spec_value}" for spec_key, spec_value in new_part[key].items()])
 
             embed.add_field(name=key, value=value, inline=False)
     
@@ -165,7 +170,7 @@ class PartInput(commands.Cog):
 
         message = await ctx.reply(embed=embed)
 
-        check = lambda m: m == ctx.author and m.channel == ctx.channel
+        check = lambda m: m == ctx.author and m.channel == ctx.channel and m.content.lower() == "confirm"
 
         try:
             await self.bot.wait_for("message", check=check, timeout=60)
@@ -175,7 +180,7 @@ class PartInput(commands.Cog):
 
         new_part["Type"] = variation
         new_part["_created_at"] = datetime.utcnow()
-        new_part["Contributors"].append(ctx.author.id)
+        new_part["_contributors"].append(ctx.author.id)
 
 
         server = self.bot.get_guild(self.bot.pm_discord["pm_server"])
