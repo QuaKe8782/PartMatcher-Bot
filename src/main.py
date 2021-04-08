@@ -4,6 +4,8 @@ from discord.ext import commands
 from os import listdir
 from utils import Embed
 from motor.motor_asyncio import AsyncIOMotorClient
+import traceback
+
 
 config = ConfigParser()
 config.read("./config.ini")
@@ -21,6 +23,17 @@ bot.pm_discord = {
 
 
 production_cogs = []
+
+
+@bot.event
+async def on_command_error(ctx, error):
+    embed = Embed(
+        title = "Error",
+        description = f"```{''.join(traceback.TracebackException.from_exception(error).format())}```"
+    )
+    await ctx.send(embed=embed)
+
+    raise error
 
 
 @bot.event
