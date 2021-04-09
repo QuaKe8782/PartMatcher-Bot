@@ -11,13 +11,15 @@ config = ConfigParser()
 config.read("./config.ini")
 
 
-bot = commands.Bot(command_prefix=config.get("Bot", "prefix"))
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix=config.get("Bot", "prefix"), intents=intents)
 
 
 # "botvars"
 bot.db = AsyncIOMotorClient(config.get("MongoDB", "connection_string"))
 bot.pm_discord = {
     "pm_server": int(config.get("Discord", "pm_server")),
+    "verified_role": int(config.get("Discord", "verified_role")),
     "verification_channel": int(config.get("Discord", "verification_channel"))
 }
 
@@ -29,7 +31,7 @@ production_cogs = []
 async def on_command_error(ctx, error):
     embed = Embed(
         title = "Error",
-        description = f"```{''.join(traceback.TracebackException.from_exception(error).format())}```"
+        description = f"```{''.join(traceback.TracebackException.from_exception(error).format())[:2000]}```"
     )
     await ctx.send(embed=embed)
 
