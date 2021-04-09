@@ -16,6 +16,11 @@ input_types = {
     "list": "A group of values seperated by a comma."
 }
 
+keywords = {
+    "skip | next": "Skips the current input field and moves on to the next one.",
+    "stop | exit | cancel": "Cancels the submission process."
+}
+
 chars = list(ascii_letters + digits)
 
 
@@ -138,14 +143,12 @@ class PartInput(commands.Cog):
 
             prev_message = await ctx.reply(embed=embed)
 
-            def check(
-                m): return m.author == ctx.author and m.channel == ctx.channel
+            def check(m): return m.author == ctx.author and m.channel == ctx.channel
 
             try:
                 message = await self.bot.wait_for("message", check=check, timeout=60)
             except asyncio.TimeoutError:
-                embed = Embed(
-                    title="You took too long to respond! Cancelling submit request.")
+                embed = Embed(title="You took too long to respond! Cancelling submit request.")
                 await ctx.reply(embed=embed)
                 raise MessageTimeout()
 
@@ -179,8 +182,7 @@ class PartInput(commands.Cog):
     async def submit(self, ctx):
         embed = Embed(
             title="What part type would you like to submit?",
-            description=' '.join(
-                [f"`{part}`" for part in part_spec_models if not part.startswith("_")])
+            description=' '.join([f"`{part}`" for part in part_spec_models if not part.startswith("_")])
         )
         def check(m): return m.author == ctx.author and m.channel == ctx.channel
 
@@ -231,7 +233,7 @@ class PartInput(commands.Cog):
             elif isinstance(new_part[key], list):
                 value = '\n'.join(new_part[key])
             elif isinstance(new_part[key], dict):
-                value = '\n'.join([f"• **{spec_key}**: {spec_value}" for spec_key, spec_value in new_part[key].items()])
+                value = '\n'.join([f"• **{spec_key}:** {spec_value}" for spec_key, spec_value in new_part[key].items()])
 
             embed.add_field(name=key, value=value, inline=False)
     
@@ -251,7 +253,6 @@ class PartInput(commands.Cog):
 
         server = self.bot.get_guild(self.bot.pm_discord["pm_server"])
         channel = server.get_channel(self.bot.pm_discord["verification_channel"])
-
 
         embed.set_author(name=ctx.message.author, icon_url=ctx.message.author.avatar_url)
         embed.title = f"{variation} Submission"
