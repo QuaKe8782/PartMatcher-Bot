@@ -210,6 +210,15 @@ class PartInput(commands.Cog):
             await prev_msg.delete()
             prev_msg = await message.reply(embed=embed)
 
+        embed = Embed(
+            title = "Submission Keywords",
+            description = '\n'.join([f"`{', '.join(keyword.split(' | '))}` - {description}" for keyword, description in keywords.items()]),
+            colour = discord.Colour.red()
+        )
+        await ctx.send(embed=embed)
+
+        await asyncio.sleep(3)
+
         for count, key in enumerate(("_part", variation)):
             try:
                 if count == 0:
