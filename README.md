@@ -8,4 +8,4 @@
 
 - View and edit PartMatcher lists directly through Discord
 - Submit and edit parts through an approval system
-- Other PartMatcher Discord intergrations and features
+- Other PartMatcher Discord integrations and features
