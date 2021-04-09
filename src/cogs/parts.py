@@ -5,7 +5,7 @@ from json import load
 import asyncio
 from random import choice
 from string import ascii_letters, digits
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 with open("part_spec_models.json") as file:
@@ -26,6 +26,72 @@ class PartInput(commands.Cog):
 
     def gen_id(self, length):
         return ''.join([choice(chars) for i in range(length)])
+
+
+    def get_reaction_counts(self, message_obj: discord.Message, *reactions):
+        result_dict = {}
+        
+        for reaction in message_obj.reactions:
+            str_reaction = str(reaction.emoji)
+            if str_reaction not in reactions:
+                continue
+            result_dict[str_reaction] = reaction.count
+
+        return result_dict
+
+
+    async def submit_part(self, part_dict):
+        while True:
+            new_id = self.gen_id(6)
+            if not await self.bot.db["PartsDB"]["Parts"].find_one({"part_id": new_id}):
+                part_dict["part_id"] = new_id
+                await self.bot.db["PartsDB"]["Parts"].insert_one(part_dict)
+                break
+        return new_id
+
+
+    def get_verified_count(self, role_id: int, guild: discord.Guild):
+        return len(guild.get_role(role_id).members)
+
+
+    def is_accepted(self, message_obj: discord.Message):
+        reaction_counts = self.get_reaction_counts(message_obj, "✅", "❌")
+
+        verified_count = self.get_verified_count(self.bot.pm_discord["verified_role"], message_obj.guild)
+
+        submission_points = 0
+        point_value = 200 / verified_count
+
+        submission_points += point_value * reaction_counts["✅"]
+        submission_points -= point_value * reaction_counts["❌"] * 0.75
+
+        return submission_points >= 100
+
+
+    async def handle_submission(self, message_obj: discord.Message, part_dict: dict):
+        async def check_accepted():
+            updated_message_obj = await message_obj.channel.fetch_message(message_obj.id)
+            if not self.is_accepted(updated_message_obj):
+                embed = Embed(title="Submission declined.", colour=discord.Colour.red())
+            else:
+                embed = Embed(title="Submission accepted.")
+                await self.submit_part(part_dict)
+            await self.bot.db["DiscordBot"]["Submissions"].delete_one({"part_id": part_dict["part_id"]})
+            await message_obj.reply(embed=embed)
+
+            return
+        
+        now = datetime.utcnow()
+
+        submission_time = part_dict["_created_at"] + timedelta(days=3)
+
+        if submission_time < now:
+            await check_accepted()
+            return
+
+        await asyncio.sleep((submission_time - now).total_seconds())
+
+        await check_accepted()
 
 
     async def assign(self, assign_dict, assign_key, ctx):
@@ -172,7 +238,7 @@ class PartInput(commands.Cog):
 
         message = await ctx.reply(embed=embed)
 
-        check = lambda m: m == ctx.author and m.channel == ctx.channel and m.content.lower() == "confirm"
+        check = lambda m: m.author == ctx.author and m.channel == ctx.channel and m.content.lower() == "confirm"
 
         try:
             await self.bot.wait_for("message", check=check, timeout=60)
@@ -182,8 +248,6 @@ class PartInput(commands.Cog):
 
         new_part["Type"] = variation
         new_part["_created_at"] = datetime.utcnow()
-        new_part["_contributors"].append(ctx.author.id)
-
 
         server = self.bot.get_guild(self.bot.pm_discord["pm_server"])
         channel = server.get_channel(self.bot.pm_discord["verification_channel"])
@@ -191,14 +255,22 @@ class PartInput(commands.Cog):
 
         embed.set_author(name=ctx.message.author, icon_url=ctx.message.author.avatar_url)
         embed.title = "Part Submission"
+        embed.set_footer(text="")
+
+        message = await channel.send(embed=embed)
+
+        for reaction in ("✅", "❌"):
+            await message.add_reaction(reaction) 
 
         while True:
             new_id = self.gen_id(6)
-            if not await self.bot.db["DiscordBot"]["Submissions"].find_one({"part_id": new_id}):
+            if not await self.bot.db["PartsDB"]["Parts"].find_one({"part_id": new_id}):
                 new_part["part_id"] = new_id
-                await self.bot.db["DiscordBot"]["Submissions"].insert_one(new_part)
-            
                 break
+
+        await self.bot.db["DiscordBot"]["Submissions"].insert_one(new_part)
+
+        await asyncio.create_task(self.handle_submission(message, new_part))
 
 
     @partmatcher.command()
@@ -218,6 +290,23 @@ class PartInput(commands.Cog):
             )
 
         await ctx.send(embed=embed)
+
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if payload.channel_id != self.bot.pm_discord["verification_channel"]:
+            return
+        if payload.user_id == self.bot.user.id:
+            return
+        guild = self.bot.get_guild(payload.guild_id)
+        member = guild.get_member(payload.user_id)
+        channel = guild.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+
+        verified = guild.get_role(self.bot.pm_discord["verified_role"])
+
+        if verified not in member.roles:
+            await message.remove_reaction(payload.emoji, payload.member)
 
 
 def setup(bot):
