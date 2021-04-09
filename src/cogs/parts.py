@@ -220,6 +220,7 @@ class PartInput(commands.Cog):
         embed = Embed(title="Part Selection Completed")
 
         new_part["Specs"].pop("_note", None)
+        new_part["Type"] = variation
 
         for key in new_part:
             if key.startswith("_"):
@@ -246,7 +247,6 @@ class PartInput(commands.Cog):
             embed = Embed(title="Submission timed out.", description="You failed to respond within 60 seconds.")
             await message.edit(embed=embed)
 
-        new_part["Type"] = variation
         new_part["_created_at"] = datetime.utcnow()
 
         server = self.bot.get_guild(self.bot.pm_discord["pm_server"])
@@ -254,7 +254,7 @@ class PartInput(commands.Cog):
 
 
         embed.set_author(name=ctx.message.author, icon_url=ctx.message.author.avatar_url)
-        embed.title = "Part Submission"
+        embed.title = f"{variation} Submission"
         embed.set_footer(text="")
 
         message = await channel.send(embed=embed)
