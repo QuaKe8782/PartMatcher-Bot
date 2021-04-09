@@ -231,7 +231,7 @@ class PartInput(commands.Cog):
             elif isinstance(new_part[key], list):
                 value = '\n'.join(new_part[key])
             elif isinstance(new_part[key], dict):
-                value = '\n'.join([f"**{spec_key}**: {spec_value}" for spec_key, spec_value in new_part[key].items()])
+                value = '\n'.join([f"• **{spec_key}**: {spec_value}" for spec_key, spec_value in new_part[key].items()])
 
             embed.add_field(name=key, value=value, inline=False)
     
