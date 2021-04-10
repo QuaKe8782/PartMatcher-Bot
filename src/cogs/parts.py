@@ -298,7 +298,7 @@ class PartInput(commands.Cog):
 
     @partmatcher.command()
     async def info(self, ctx, *, search_term):
-        query = list(await self.bot.db["PartsDB"]["Parts"].find({"$text": {"$search": search_term}}))
+        query = await self.bot.db["PartsDB"]["Parts"].find({"$text": {"$search": search_term}}).to_list(length=10)
 
         if not query:
             embed = Embed(
