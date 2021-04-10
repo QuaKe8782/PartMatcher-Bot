@@ -100,7 +100,7 @@ class PartInput(commands.Cog):
         
         now = datetime.utcnow()
 
-        submission_time = part_dict["_created_at"] + timedelta(days=3)
+        submission_time = part_dict["_created_at"] + timedelta(days=2)
 
         if submission_time < now:
             await check_accepted()
