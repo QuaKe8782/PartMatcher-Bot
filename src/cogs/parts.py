@@ -27,6 +27,17 @@ chars = list(ascii_letters + digits)
 class PartInput(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        bot.loop.create_task(self.restart_tasks())
+
+
+    async def restart_tasks(self):
+        await self.bot.wait_until_ready()
+        submissions = self.bot.db["DiscordBot"]["Submissions"].find({})
+        guild = self.bot.get_guild(self.bot.pm_discord["pm_server"])
+        channel = guild.get_channel(self.bot.pm_discord["verification_channel"])
+        for sub in await submissions.to_list(length=1000):
+            message = await channel.fetch_message(sub["message_id"])
+            await self.handle_submission(message, sub)
 
 
     def gen_id(self, length):
@@ -50,6 +61,7 @@ class PartInput(commands.Cog):
             new_id = self.gen_id(6)
             if not await self.bot.db["PartsDB"]["Parts"].find_one({"part_id": new_id}):
                 part_dict["part_id"] = new_id
+                part_dict.pop("message_id", None)
                 await self.bot.db["PartsDB"]["Parts"].insert_one(part_dict)
                 break
         return new_id
@@ -278,6 +290,7 @@ class PartInput(commands.Cog):
                 new_part["part_id"] = new_id
                 break
 
+        new_part["message_id"] = message.id
         await self.bot.db["DiscordBot"]["Submissions"].insert_one(new_part)
 
         await asyncio.create_task(self.handle_submission(message, new_part))
