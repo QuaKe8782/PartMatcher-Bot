@@ -21,7 +21,8 @@ bot.db = AsyncIOMotorClient(config.get("MongoDB", "connection_string"))
 bot.pm_discord = {
     "pm_server": int(config.get("Discord", "pm_server")),
     "verified_role": int(config.get("Discord", "verified_role")),
-    "verification_channel": int(config.get("Discord", "verification_channel"))
+    "verification_channel": int(config.get("Discord", "verification_channel")),
+    "member_role": int(config.get("Discord", "member_role"))
 }
 
 
@@ -69,6 +70,10 @@ async def send_rules_and_roles():
         "Follow Discord's [Terms of Service](https://discord.com/terms) and the [Community Guidelines](https://discord.com/guidelines)."
     ]
 
+    links = {
+        "Permanent Invite Link": "https://discord.gg/TfVdDQcHKb"
+    }
+
     embeds = [
         Embed(
             title = "PartMatcher Discord Rules",
@@ -77,6 +82,10 @@ async def send_rules_and_roles():
         Embed(
             title = "PartMatcher Discord Roles",
             description = '\n\n'.join([f"**<@&{role}> -** {roles[role]}" for role in roles])
+        ),
+        Embed(
+            title = "PartMatcher Links",
+            description = '\n\n'.join([f"[{link}]({links[link]})" for link in links])
         )
     ]
 
@@ -87,7 +96,7 @@ async def send_rules_and_roles():
 @bot.event
 async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="PartMatcher"))
-    # send_rules_and_roles()
+    # await send_rules_and_roles()
 
 
 @bot.command(aliases=["re"])
