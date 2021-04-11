@@ -29,16 +29,26 @@ bot.pm_discord = {
 production_cogs = []
 
 
-@bot.event
-async def on_command_error(ctx, error):
+async def report_error(ctx, error):
     embed = Embed(
         title = "Error",
         description = f"```{''.join(traceback.TracebackException.from_exception(error).format())[:2000]}```"
     )
+
     await ctx.send(embed=embed)
 
     raise error
 
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandInvokeError):
+        error = error.original
+        if isinstance(error, discord.errors.Forbidden):
+            return
+        await report_error(ctx, error)
+        
+    await report_error(ctx, error)
 
 async def send_rules_and_roles():
     server = bot.get_guild(809900131494789120)
