@@ -24,7 +24,7 @@ class Moderation(commands.Cog):
 
     def generate_captcha(self):
         id = self.gen_id(6)
-        file_name = self.gen_id(6
+        file_name = self.gen_id(6)
         path = f"captchas/{file_name}.png"
         image.write(id, path)
         return path, id
