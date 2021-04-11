@@ -24,7 +24,8 @@ class Moderation(commands.Cog):
 
     def generate_captcha(self):
         id = self.gen_id(6)
-        path = f'captchas/{id}.png'
+        file_name = self.gen_id(6
+        path = f"captchas/{file_name}.png"
         image.write(id, path)
         return path, id
 
@@ -33,18 +34,66 @@ class Moderation(commands.Cog):
     async def on_member_join(self, member):
         if member.guild.id != self.bot.pm_discord["pm_server"]:
             return
-        with ThreadPoolExecutor() as pool:
-            path, id = await asyncio.get_event_loop().run_in_executor(pool, self.generate_captcha)
         
-        file = discord.File(path, filename=f"{id}.png")
+        incorrect_attempts = 0
+        while True:
+            with ThreadPoolExecutor() as pool:
+                path, id = await asyncio.get_event_loop().run_in_executor(pool, self.generate_captcha)
+            
+            file = discord.File(path, filename=f"{id}.png")
+
+            embed = Embed(
+                title = "Verification",
+                description = "Please complete this CAPTCHA to continue."
+            )
+            embed.set_image(url=f"attachment://{id}.png")
+            await member.send(file=file, embed=embed)
+            remove(path)
+
+            check = lambda m: not m.guild and m.author == member
+
+            try:
+                message = await self.bot.wait_for("message", check=check, timeout=60)
+            except asyncio.TimeoutError:
+                embed = Embed(
+                    title = "You've didn't respond in time!",
+                    description = "You have been kicked from the Discord server. Please rejoin the server if this is a mistake.",
+                    colour = discord.Colour.red()
+                )
+                await member.send(embed=embed)
+                await member.kick(reason="Failed CAPTCHA")
+                return
+
+            if message.content.lower() == id:
+                break
+            else:
+                incorrect_attempts += 1
+                embed = Embed(
+                    title = "CAPTCHA failed",
+                    description = f"You have {3 - incorrect_attempts} attempts left.",
+                    colour = discord.Colour.red()
+                )
+                await message.reply(embed=embed)
+            
+            if incorrect_attempts >= 3:
+                embed = Embed(
+                    title = "You've run out of CAPTCHA attempts!",
+                    description = "You have been kicked from the Discord server. Please rejoin the server if this is a mistake.",
+                    colour = discord.Colour.red()
+                )
+                await member.send(embed=embed)
+                await member.kick(reason="Failed CAPTCHA")
+                return
+
+        member_role = member.guild.get_role(self.bot.pm_discord["member_role"])
+        await member.add_roles(member_role, reason="Completed CAPTCHA")
 
         embed = Embed(
-            title = "Verification",
-            description = "Plase complete this CAPTCHA to continue."
+            title = "Success! You have completed the CAPTCHA!",
+            description = "You have gained access to the rest of the server."
         )
-        embed.set_image(url=f"attachment://{id}.png")
-        await member.send(file=file, embed=embed)
-        remove(path)
+        await message.reply(embed=embed)
+
 
 
 def setup(bot):
