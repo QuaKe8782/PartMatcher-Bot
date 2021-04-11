@@ -143,8 +143,9 @@ class Moderation(commands.Cog):
                 title = f"{member} has no warns saved."
             )
             await ctx.send(embed=embed)
+            return
 
-        
+
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
