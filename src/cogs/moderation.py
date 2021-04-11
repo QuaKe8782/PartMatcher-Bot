@@ -134,5 +134,10 @@ class Moderation(commands.Cog):
         await member.send(embed=embed)
 
 
+    @commands.command(aliases=["warnings", "getwarns", "showwarns"])
+    async def warns(self, ctx, member: Member):
+        pass
+
+
 def setup(bot):
     bot.add_cog(Moderation(bot))
