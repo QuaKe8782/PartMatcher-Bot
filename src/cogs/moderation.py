@@ -136,8 +136,15 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases=["warnings", "getwarns", "showwarns"])
     async def warns(self, ctx, member: Member):
-        pass
+        warns = await self.bot.db["DiscordBot"]["Warns"].find({"user": member.id}).to_list(length=50)
+        
+        if not warns:
+            embed = Embed(
+                title = f"{member} has no warns saved."
+            )
+            await ctx.send(embed=embed)
 
+        
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
