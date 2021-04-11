@@ -6,7 +6,10 @@ from random import choice
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
 from utils import Embed
-from os import remove
+import os
+from uuid import uuid1
+from utils import Member
+from datetime import datetime
 
 
 chars = list(ascii_lowercase + digits)
@@ -46,9 +49,9 @@ class Moderation(commands.Cog):
                 title = "Verification",
                 description = "Please complete this CAPTCHA to continue."
             )
-            embed.set_image(url=f"attachment://{id}.png")
+            embed.set_image(url=f"attachment://{os.path.basename(path)}.png")
             await member.send(file=file, embed=embed)
-            remove(path)
+            os.remove(path)
 
             check = lambda m: not m.guild and m.author == member
 
@@ -94,6 +97,41 @@ class Moderation(commands.Cog):
         )
         await message.reply(embed=embed)
 
+
+    @commands.has_guild_permissions(kick_members=True)
+    @commands.command()
+    async def warn(self, ctx, member: Member = None, reason="No reason provided."):
+        if not member:
+            embed = Embed(
+                title = "You need to tell me who to warn!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+
+        warn_object = {
+            "_id": str(uuid1()),
+            "user": member.id,
+            "mod": ctx.author.id,
+            "reason": reason,
+            "time": datetime.utcnow()
+        }
+
+        await self.bot.db["DiscordBot"]["Warns"].insert_one(warn_object)
+
+        embed = Embed(
+            title = f"Warned {member} for:",
+            description = reason
+        )
+
+        await ctx.reply(embed=embed)
+
+        embed = Embed(
+            title = "You have been warned in PartMatcher for:",
+            description = reason,
+            colour = discord.Colour.red()
+        )
+
+        await member.send(embed=embed)
 
 
 def setup(bot):
