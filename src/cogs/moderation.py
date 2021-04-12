@@ -130,7 +130,7 @@ class Moderation(commands.Cog):
 
         await member.send(embed=embed)
 
-    @commands.command(aliases=["warnings", "getwarns", "showwarns"])
+    @commands.group(aliases=["warnings", "getwarns", "showwarns"], invoke_without_command=True)
     async def warns(self, ctx, member: Member):
         warns = await self.bot.db["DiscordBot"]["Warns"].find({"user": member.id}).to_list(length=50)
 
@@ -153,10 +153,11 @@ class Moderation(commands.Cog):
                 embed.add_field(
                     name=f"Case ID: {warn['_id']}",
                     value=f"""\
-Reason: {warn["reason"]}
-Moderator: <@{warn["mod"]}> ({warn["mod"]})
-Time: {warn["time"].strftime("%c")}
-"""
+**Reason -** {warn["reason"]}
+**Moderator -** <@{warn["mod"]}> ({warn["mod"]})
+**Time -** {warn["time"].strftime("%c")} UTC
+""",                
+                    inline = False
                 )
 
             embeds.append(embed)
