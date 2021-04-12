@@ -44,13 +44,13 @@ class Moderation(commands.Cog):
             with ThreadPoolExecutor() as pool:
                 path, id = await asyncio.get_event_loop().run_in_executor(pool, self.generate_captcha)
 
-            file = discord.File(path, filename=f"{id}.png")
+            file = discord.File(path, filename=f"{os.path.basename(path)}")
 
             embed = Embed(
                 title="Verification",
                 description="Please complete this CAPTCHA to continue."
             )
-            embed.set_image(url=f"attachment://{os.path.basename(path)}.png")
+            embed.set_image(url=f"attachment://{os.path.basename(path)}")
             await member.send(file=file, embed=embed)
             os.remove(path)
 
