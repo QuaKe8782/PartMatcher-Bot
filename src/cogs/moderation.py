@@ -297,5 +297,79 @@ class Moderation(commands.Cog):
         await ctx.reply(embed=embed)
 
 
+    @commands.has_guild_permissions(kick_members=True)
+    @commands.command()
+    async def kick(self, ctx, member: Member = None, *, reason = "No reason provided."):
+        if not member:
+            embed = Embed(
+                title = "You need to tell me which member to kick!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+        
+        if not ctx.me.top_role > member.top_role:
+            embed = Embed(
+                title = "I can't kick that user!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        embed = Embed(
+            title = "You have been kicked from PartMatcher for:",
+            description = reason,
+            colour = discord.Colour.red()
+        )
+        await member.send(embed=embed)
+
+        await member.kick(reason=reason)
+
+        embed = Embed(
+            title = f"Successfully banned {member} for:",
+            description = reason,
+            colour = discord.Colour.red()
+        )
+
+        await ctx.reply(embed=embed)
+        
+
+    @commands.has_guild_permissions(kick_members=True)
+    @commands.command()
+    async def ban(self, ctx, member: Member = None, *, reason = "No reason provided."):
+        if not member:
+            embed = Embed(
+                title = "You need to tell me which member to ban!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+        
+        if not ctx.me.top_role > member.top_role:
+            embed = Embed(
+                title = "I can't ban that user!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        embed = Embed(
+            title = "You have been banned from PartMatcher for:",
+            description = reason,
+            colour = discord.Colour.red()
+        )
+        await member.send(embed=embed)
+
+        await member.ban(reason=reason)
+
+        embed = Embed(
+            title = f"Successfully banned {member} for:",
+            description = reason,
+            colour = discord.Colour.red()
+        )
+
+        await ctx.reply(embed=embed)
+
+
 def setup(bot):
     bot.add_cog(Moderation(bot))
