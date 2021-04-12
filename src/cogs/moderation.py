@@ -139,6 +139,7 @@ class Moderation(commands.Cog):
 
         await member.send(embed=embed)
 
+    @commands.has_guild_permissions(kick_members=True)
     @commands.group(aliases=["warnings", "getwarns", "showwarns"], invoke_without_command=True)
     async def warns(self, ctx, *, member: Member = None):
         if not member:
