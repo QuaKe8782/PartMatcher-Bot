@@ -371,5 +371,30 @@ class Moderation(commands.Cog):
         await ctx.reply(embed=embed)
 
 
+    @commands.has_guild_permissions(kick_members=True)
+    @commands.command()
+    async def hackban(self, ctx, user_id = None, *, reason = "No reason provided."):
+        if not user_id:
+            embed = Embed(
+                title = "You need to tell me the user ID of the member to hackban!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        guild = self.bot.get_guild(self.bot.pm_discord["pm_server"])
+        user = await self.bot.fetch_user(user_id)
+
+        await guild.ban(user, reason=reason)
+
+        embed = Embed(
+            title = f"Successfully hackbanned {user} for:",
+            description = reason,
+            colour = discord.Colour.red()
+        )
+
+        await ctx.reply(embed=embed)
+
+
 def setup(bot):
     bot.add_cog(Moderation(bot))
