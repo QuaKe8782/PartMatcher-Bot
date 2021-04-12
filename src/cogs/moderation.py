@@ -21,8 +21,10 @@ class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+
     def gen_id(self, length):
         return ''.join([choice(chars) for i in range(length)])
+
 
     def generate_captcha(self):
         id = self.gen_id(6)
@@ -30,6 +32,7 @@ class Moderation(commands.Cog):
         path = f"captchas/{file_name}.png"
         image.write(id, path)
         return path, id
+
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -95,6 +98,7 @@ class Moderation(commands.Cog):
         )
         await message.reply(embed=embed)
 
+
     @commands.has_guild_permissions(kick_members=True)
     @commands.command()
     async def warn(self, ctx, member: Member = None, *, reason="No reason provided."):
@@ -138,6 +142,7 @@ class Moderation(commands.Cog):
         )
 
         await member.send(embed=embed)
+
 
     @commands.has_guild_permissions(kick_members=True)
     @commands.group(aliases=["warnings", "getwarns", "showwarns"], invoke_without_command=True)
@@ -219,7 +224,6 @@ class Moderation(commands.Cog):
                 current_page += 1
 
             await message.edit(embed=embeds[current_page])
-
 
 
     @warns.command()
