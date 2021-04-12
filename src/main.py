@@ -13,7 +13,7 @@ config.read("./config.ini")
 
 
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix=config.get("Bot", "prefix"), intents=intents)
+bot = commands.Bot(command_prefix=config.get("Bot", "prefix"), intents=intents, case_insensitive=True)
 
 
 # "botvars"
