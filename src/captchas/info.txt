@@ -1,0 +1,2 @@
+Captchas are generated and then instantly deleted in this folder.
+Have a nice day.
