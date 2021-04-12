@@ -144,7 +144,7 @@ class Moderation(commands.Cog):
         embeds = []
 
         pages = ceil(len(warns)/5)
-        for i in range(ceil(len(warns)/5)):
+        for i in range(pages):
             section_warns = warns[i * 5: i * 5 + 5]
             embed = Embed(
                 title=f"Showing warns {i * 5 + 1} - {i * 5 + len(section_warns)} of {len(warns)} for {member}:"
@@ -174,7 +174,7 @@ class Moderation(commands.Cog):
             if current_page >= 1:
                 reaction_list.append("◀️")
 
-            if current_page < len(embeds) - 1:
+            if current_page < pages:
                 reaction_list.append("▶️")
 
             for reaction in reaction_list:
