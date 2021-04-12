@@ -169,7 +169,7 @@ class Moderation(commands.Cog):
 
             for warn in section_warns:
                 embed.add_field(
-                    name=f"Case ID: {warn['_id']}",
+                    name=f"Case ID - {warn['_id']}",
                     value=f"""\
 **Reason -** {warn["reason"]}
 **Moderator -** <@{warn["mod"]}> ({warn["mod"]})
@@ -239,7 +239,7 @@ class Moderation(commands.Cog):
                 colour = discord.Colour.red()
             )
         else:
-            embed = Embed(title = f"Successfully transferred {warns.modified_count} warns from {original_member} to {new_member}.")
+            embed = Embed(title = f"Successfully transferred {warns.modified_count} warn(s) from {original_member} to {new_member}.")
         await ctx.reply(embed=embed)
 
 
@@ -261,7 +261,7 @@ class Moderation(commands.Cog):
                 colour = discord.Colour.red()
             )
         else:
-            embed = Embed(title = f"Successfully deleted {deletions.deleted_count} warns from {member}.")
+            embed = Embed(title = f"Successfully deleted {deletions.deleted_count} warn(s) from {member}.")
         await ctx.reply(embed=embed)
 
 
