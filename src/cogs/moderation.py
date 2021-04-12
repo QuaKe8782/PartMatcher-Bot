@@ -131,7 +131,15 @@ class Moderation(commands.Cog):
         await member.send(embed=embed)
 
     @commands.group(aliases=["warnings", "getwarns", "showwarns"], invoke_without_command=True)
-    async def warns(self, ctx, member: Member):
+    async def warns(self, ctx, member: Member = None):
+        if not member:
+            embed = Embed(
+                title = "You need to tell me what member's warns to show!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+
         warns = await self.bot.db["DiscordBot"]["Warns"].find({"user": member.id}).to_list(length=50)
 
         if not warns:
@@ -223,6 +231,17 @@ class Moderation(commands.Cog):
         else:
             embed = Embed(title = f"Successfully transferred {warns.modified_count} warns from {original_member} to {new_member}.")
         await ctx.reply(embed=embed)
+
+
+    @warns.command()
+    async def clear(self, ctx, member: Member = None):
+        if not member:
+            embed = Embed(
+                title = "You need to tell me what member's warns to clear!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
 
 
 def setup(bot):
