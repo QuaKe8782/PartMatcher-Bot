@@ -143,6 +143,7 @@ class Moderation(commands.Cog):
 
         embeds = []
 
+        pages = ceil(len(warns)/5)
         for i in range(ceil(len(warns)/5)):
             section_warns = warns[i * 5: i * 5 + 5]
             embed = Embed(
@@ -162,8 +163,45 @@ class Moderation(commands.Cog):
 
             embeds.append(embed)
 
-            for embed in embeds:
-                await ctx.reply(embed=embed)
+        current_page = 0
+        message = await ctx.reply(embed=embeds[current_page])
+        
+        while True:
+            await message.clear_reactions()
+
+            reaction_list = ["❌"]
+
+            if current_page >= 1:
+                reaction_list.append("◀️")
+
+            if current_page < len(embeds) - 1:
+                reaction_list.append("▶️")
+
+            for reaction in reaction_list:
+                await message.add_reaction(reaction)
+
+            check = lambda r, u: r.message == message and u == ctx.author and str(r.emoji) in reaction_list  
+
+            try:
+                reaction = await self.bot.wait_for("reaction_add", check=check, timeout=30)
+            except asyncio.TimeoutError:
+                await message.clear_reactions()
+                return
+
+            reaction_emoji = str(reaction[0].emoji)
+
+            if reaction_emoji == "❌":
+                await message.clear_reactions()
+                return
+            
+            if reaction_emoji == "◀️":
+                current_page -= 1
+
+            elif reaction_emoji == "▶️":
+                current_page += 1
+
+            await message.edit(embed=embeds[current_page])
+
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
