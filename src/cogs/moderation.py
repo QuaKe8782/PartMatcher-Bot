@@ -243,6 +243,17 @@ class Moderation(commands.Cog):
             await ctx.reply(embed=embed)
             return
 
+        deletions = await self.bot.db["DiscordBot"]["Warns"].delete_many({"user": member.id})
+
+        if deletions.deleted_count == 0:
+            embed = Embed(
+                title = f"{member} has no warns saved.",
+                colour = discord.Colour.red()
+            )
+        else:
+            embed = Embed(title = f"Successfully deleted {deletions.deleted_count} warns from {member}.")
+        await ctx.reply(embed=embed)
+
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
