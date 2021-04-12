@@ -47,7 +47,13 @@ async def on_command_error(ctx, error):
         if isinstance(error, discord.errors.Forbidden):
             return
         await report_error(ctx, error)
-        
+    if isinstance(error, commands.MemberNotFound):
+        embed = Embed(
+            title = "Member not found",
+            description = "Unable to find that member. Perhaps you made a typo?",
+            colour = discord.colour.red()
+        )
+        return
     await report_error(ctx, error)
 
 async def send_rules_and_roles():
