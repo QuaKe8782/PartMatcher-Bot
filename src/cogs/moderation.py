@@ -97,10 +97,10 @@ class Moderation(commands.Cog):
 
     @commands.has_guild_permissions(kick_members=True)
     @commands.command()
-    async def warn(self, ctx, member: Member = None, reason="No reason provided."):
+    async def warn(self, ctx, member: Member = None, *, reason="No reason provided."):
         if not member:
             embed = Embed(
-                title="You need to tell me who to warn!",
+                title="You need to tell me which member to warn!",
                 colour=discord.Colour.red()
             )
             await ctx.reply(embed=embed)
@@ -131,10 +131,10 @@ class Moderation(commands.Cog):
         await member.send(embed=embed)
 
     @commands.group(aliases=["warnings", "getwarns", "showwarns"], invoke_without_command=True)
-    async def warns(self, ctx, member: Member = None):
+    async def warns(self, ctx, *, member: Member = None):
         if not member:
             embed = Embed(
-                title = "You need to tell me what member's warns to show!",
+                title = "You need to tell me which member's warns to show!",
                 colour = discord.Colour.red()
             )
             await ctx.reply(embed=embed)
@@ -211,8 +211,9 @@ class Moderation(commands.Cog):
             await message.edit(embed=embeds[current_page])
 
 
+
     @warns.command()
-    async def transfer(self, ctx, original_member: Member = None, new_member: Member = None):
+    async def transfer(self, ctx, original_member: Member = None, *, new_member: Member = None):
         if not original_member or not new_member:
             embed = Embed(
                 title = "You need to provide two members!",
@@ -234,10 +235,10 @@ class Moderation(commands.Cog):
 
 
     @warns.command()
-    async def clear(self, ctx, member: Member = None):
+    async def clear(self, ctx, *, member: Member = None):
         if not member:
             embed = Embed(
-                title = "You need to tell me what member's warns to clear!",
+                title = "You need to tell me which member's warns to clear!",
                 colour = discord.Colour.red()
             )
             await ctx.reply(embed=embed)
@@ -252,6 +253,23 @@ class Moderation(commands.Cog):
             )
         else:
             embed = Embed(title = f"Successfully deleted {deletions.deleted_count} warns from {member}.")
+        await ctx.reply(embed=embed)
+
+
+    @warns.command(aliases=["del", "delwarn"])
+    async def delete(self, ctx, case_id):
+        warn = await self.bot.db["DiscordBot"]["Warns"].delete_one({"_id": case_id})
+
+        if warn.deleted_count == 0:
+            embed = Embed(
+                title = "Couldn't find a warn with that case ID.",
+                description = "Perhaps you made a typo?",
+                colour = discord.Colour.red()
+            )
+        else:
+            embed = Embed(
+                title = "Successfully deleted warn."
+            )
         await ctx.reply(embed=embed)
 
 
