@@ -49,10 +49,19 @@ async def on_command_error(ctx, error):
         await report_error(ctx, error)
     if isinstance(error, commands.MemberNotFound):
         embed = Embed(
-            title = "Member not found",
+            title = "Member Not Found",
             description = "Unable to find that member. Perhaps you made a typo?",
-            colour = discord.colour.red()
+            colour = discord.Colour.red()
         )
+        await ctx.reply(embed=embed)
+        return
+    if isinstance(error, commands.MissingPermissions):
+        embed = Embed(
+            title = "Missing Permissions",
+            description = "You don't have the permissions necessary to use that command!",
+            colour = discord.Colour.red()
+        )
+        await ctx.reply(embed=embed)
         return
     await report_error(ctx, error)
 
