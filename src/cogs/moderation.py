@@ -104,6 +104,15 @@ class Moderation(commands.Cog):
                 colour=discord.Colour.red()
             )
             await ctx.reply(embed=embed)
+            return
+
+        if member.bot:
+            embed = Embed(
+                title="I can't warn a bot!",
+                colour=discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
 
         warn_object = {
             "_id": str(uuid1()),
@@ -267,9 +276,7 @@ class Moderation(commands.Cog):
                 colour = discord.Colour.red()
             )
         else:
-            embed = Embed(
-                title = "Successfully deleted warn."
-            )
+            embed = Embed(title = "Successfully deleted warn.")
         await ctx.reply(embed=embed)
 
 
