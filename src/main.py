@@ -96,7 +96,7 @@ async def send_rules_and_roles():
     ]
 
     links = {
-        "Permanent Invite Link": "https://discord.gg/TfVdDQcHKb"
+        "Permanent Invite Link": "https://discord.gg/Qx5y8AvTeu"
     }
 
     embeds = [
@@ -121,7 +121,7 @@ async def send_rules_and_roles():
 @bot.event
 async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="PartMatcher"))
-    # await send_rules_and_roles()
+    await send_rules_and_roles()
 
 
 @bot.command(aliases=["re"])
