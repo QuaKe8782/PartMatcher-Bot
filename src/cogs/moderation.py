@@ -51,7 +51,10 @@ class Moderation(commands.Cog):
                 description="Please complete this CAPTCHA to continue."
             )
             embed.set_image(url=f"attachment://{os.path.basename(path)}")
-            await member.send(file=file, embed=embed)
+            try:
+                await member.send(file=file, embed=embed)
+            except:
+                pass
             os.remove(path)
 
             def check(m): return not m.guild and m.author == member
@@ -64,7 +67,10 @@ class Moderation(commands.Cog):
                     description="You have been kicked from the Discord server. Please rejoin the server if this is a mistake.",
                     colour=discord.Colour.red()
                 )
-                await member.send(embed=embed)
+                try:
+                    await message.reply(embed=embed)
+                except:
+                    pass
                 await member.kick(reason="Failed CAPTCHA")
                 return
 
@@ -77,7 +83,10 @@ class Moderation(commands.Cog):
                     description=f"You have {3 - incorrect_attempts} attempts left.",
                     colour=discord.Colour.red()
                 )
-                await message.reply(embed=embed)
+                try:
+                    await message.reply(embed=embed)
+                except:
+                    pass
 
             if incorrect_attempts >= 3:
                 embed = Embed(
@@ -85,7 +94,10 @@ class Moderation(commands.Cog):
                     description="You have been kicked from the Discord server. Please rejoin the server if this is a mistake.",
                     colour=discord.Colour.red()
                 )
-                await member.send(embed=embed)
+                try:
+                    await message.reply(embed=embed)
+                except:
+                    pass
                 await member.kick(reason="Failed CAPTCHA")
                 return
 
