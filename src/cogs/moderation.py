@@ -326,7 +326,7 @@ class Moderation(commands.Cog):
         await member.kick(reason=reason)
 
         embed = Embed(
-            title = f"Successfully banned {member} for:",
+            title = f"Successfully kicked {member} for:",
             description = reason,
             colour = discord.Colour.red()
         )
