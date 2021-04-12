@@ -203,5 +203,27 @@ class Moderation(commands.Cog):
             await message.edit(embed=embeds[current_page])
 
 
+    @warns.command()
+    async def transfer(self, ctx, original_member: Member = None, new_member: Member = None):
+        if not original_member or not new_member:
+            embed = Embed(
+                title = "You need to provide two members!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+        
+        warns = await self.bot.db["DiscordBot"]["Warns"].update_many({"user": original_member.id}, {"$set": {"user": new_member.id}})
+
+        if warns.modified_count == 0:
+            embed = Embed(
+                title = f"{original_member} has no warns saved.",
+                colour = discord.Colour.red()
+            )
+        else:
+            embed = Embed(title = f"Successfully transferred {warns.modified_count} warns from {original_member} to {new_member}.")
+        await ctx.reply(embed=embed)
+
+
 def setup(bot):
     bot.add_cog(Moderation(bot))
