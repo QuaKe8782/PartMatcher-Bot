@@ -334,7 +334,7 @@ class Moderation(commands.Cog):
         await ctx.reply(embed=embed)
         
 
-    @commands.has_guild_permissions(kick_members=True)
+    @commands.has_guild_permissions(ban_members=True)
     @commands.command()
     async def ban(self, ctx, member: Member = None, *, reason = "No reason provided."):
         if not member:
@@ -371,9 +371,9 @@ class Moderation(commands.Cog):
         await ctx.reply(embed=embed)
 
 
-    @commands.has_guild_permissions(kick_members=True)
+    @commands.has_guild_permissions(ban_members=True)
     @commands.command()
-    async def hackban(self, ctx, user_id = None, *, reason = "No reason provided."):
+    async def hackban(self, ctx, user_id = None):
         if not user_id:
             embed = Embed(
                 title = "You need to tell me the user ID of the member to hackban!",
@@ -382,17 +382,66 @@ class Moderation(commands.Cog):
             await ctx.reply(embed=embed)
             return
 
+        try:
+            user = await self.bot.fetch_user(user_id)
+        except (discord.errors.NotFound, discord.errors.HTTPException):
+            embed = Embed(
+                title = f"{user_id} is not a valid user ID!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+            
         guild = self.bot.get_guild(self.bot.pm_discord["pm_server"])
-        user = await self.bot.fetch_user(user_id)
 
-        await guild.ban(user, reason=reason)
+        try:
+            await guild.ban(discord.Object(id=user_id))
+        except discord.errors.NotFound:
+            embed = Embed(
+                title = "That user is already banned!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
 
-        embed = Embed(
-            title = f"Successfully hackbanned {user} for:",
-            description = reason,
-            colour = discord.Colour.red()
-        )
+        embed = Embed(title = f"Successfully hackbanned {user}.")
+        await ctx.reply(embed=embed)
 
+
+    @commands.command()
+    @commands.has_guild_permissions(ban_members=True)
+    async def unban(self, ctx, user_id = None):
+        if not user_id:
+            embed = Embed(
+                title = "You need to tell me the user ID of the member to unban!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        try:
+            user = await self.bot.fetch_user(user_id)
+        except (discord.errors.NotFound, discord.errors.HTTPException):
+            embed = Embed(
+                title = f"{user_id} is not a valid user ID!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+            
+        guild = self.bot.get_guild(self.bot.pm_discord["pm_server"])
+
+        try:
+            await guild.unban(discord.Object(id=user_id))
+        except discord.errors.NotFound:
+            embed = Embed(
+                title = "That user is not banned!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        embed = Embed(title = f"Successfully unbanned {user}.")
         await ctx.reply(embed=embed)
 
 
