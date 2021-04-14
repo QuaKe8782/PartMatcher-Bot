@@ -52,29 +52,32 @@ class Moderation(commands.Cog):
             asyncio.create_task(self.handle_mute(mute, member))
 
 
-    async def unmute(self, mute_obj, member, muted_role):
-        await member.remove_roles(muted_role)
-        embed = Embed(title="You have been unmuted.")
-        try:
-            await member.send(embed=embed)
-        except:
-            pass
-
-        self.bot.db["DiscordBot"]["Mutes"].update_one({"_id": mute_obj["_id"]}, {"$set": {"ended": True}})
-        return
-
-
     async def handle_mute(self, mute_obj, member: discord.Member):
-        now = datetime.utcnow()
         muted_role = member.guild.get_role(self.bot.pm_discord["muted_role"])
 
-        if now > mute_obj["end_time"]:
-            await self.unmute(mute_obj, member, muted_role)
-            return
+        while True:
+            sleep_time = (mute_obj["end_time"] - datetime.utcnow()).total_seconds()
 
-        await asyncio.sleep((mute_obj["end_time"] - now).total_seconds())
+            await asyncio.sleep(sleep_time)
 
-        await self.unmute(mute_obj, member, muted_role)
+            mute_obj = await self.bot.db["DiscordBot"]["Mutes"].find_one({"_id": mute_obj["_id"]})
+
+            if mute_obj["end_time"] == "infinite":
+                return
+
+            if mute_obj["ended"]:
+                return
+
+            if datetime.utcnow() > mute_obj["end_time"]:
+                await member.remove_roles(muted_role)
+                embed = Embed(title="You have been unmuted.")
+                try:
+                    await member.send(embed=embed)
+                except:
+                    pass
+
+                await self.bot.db["DiscordBot"]["Mutes"].update_one({"_id": mute_obj["_id"]}, {"$set": {"ended": True}})
+                return
 
 
     @commands.Cog.listener()
@@ -537,7 +540,6 @@ class Moderation(commands.Cog):
             await ctx.reply(embed=embed)
             return
 
-
         time_periods = {
             "s": (1, "second(s)"),
             "m": (60, "minute(s)"),
@@ -588,6 +590,36 @@ class Moderation(commands.Cog):
             await ctx.reply(embed=embed)
             return
 
+
+        mute = await self.bot.db["DiscordBot"]["Mutes"].find_one({"user": member.id, "ended": False})
+
+
+        time_keys = list(time_periods)
+
+        for count, time_period in enumerate(time_keys):
+            if time_periods[time_period][0] > total_time:
+                message = self.convert_float(round(total_time / time_periods[time_keys[count - 1]][0], 2)) + ' ' + time_periods[time_keys[count - 1]][1]
+                break
+            elif time_periods[time_period][0] == total_time:
+                message = self.convert_float(round(total_time / time_periods[time_keys[count]][0], 2)) + ' ' +time_periods[time_keys[count]][1]
+                break
+
+        # checks if member is already muted
+        if mute:
+            if not mute_periods:
+                new_time = "infinite"
+                embed = Embed(title = f"{member} has been muted until further notice.")
+            else:
+                new_time = mute["end_time"] + timedelta(seconds=total_time)
+                embed = Embed(title=f"{member}'s mute has been extended by {message}.")
+
+            await self.bot.db["DiscordBot"]["Mutes"].update_one({"_id": mute["_id"]}, {"$set": {"end_time": new_time}})
+
+            await ctx.reply(embed=embed)
+
+            return
+
+
         mute_object = {
             "_id": str(uuid4()),
             "user": member.id,
@@ -613,19 +645,10 @@ class Moderation(commands.Cog):
 
         asyncio.create_task(self.handle_mute(mute_object, member))
 
-        time_keys = list(time_periods)
-        for count, time_period in enumerate(time_keys):
-            if time_periods[time_period][0] > total_time:
-                message = f"been muted for {self.convert_float(round(total_time / time_periods[time_keys[count - 1]][0], 2))} {time_periods[time_keys[count - 1]][1]}."
-                break
-            elif time_periods[time_period][0] == total_time:
-                message = f"been muted for {self.convert_float(round(total_time / time_periods[time_keys[count]][0], 2))} {time_periods[time_keys[count]][1]}."
-                break
-
-        embed = Embed(title = f"You have {message}")
+        embed = Embed(title = f"You have been muted for {message}.")
         await member.send(embed=embed)
 
-        embed = Embed(title=f"{member} has {message}") 
+        embed = Embed(title=f"{member} has been muted for {message}.") 
         await ctx.reply(embed=embed)
 
 
