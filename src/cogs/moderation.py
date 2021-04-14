@@ -9,17 +9,20 @@ from utils import Embed
 import os
 from uuid import uuid1
 from utils import Member
-from datetime import datetime
+from datetime import datetime, timedelta
 from math import ceil
+from inflect import engine
 
 
 chars = list(ascii_lowercase + digits)
 image = ImageCaptcha(fonts=['./fonts/Comic.ttf', "./fonts/OpenSans-Bold.ttf"])
-
+inf = engine()
+  
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        bot.loop.create_task(self.restart_tasks())
 
 
     def gen_id(self, length):
@@ -34,10 +37,75 @@ class Moderation(commands.Cog):
         return path, id
 
 
+    def convert_float(self, num: float):
+        if num.is_integer():
+            return str(int(num))
+        return str(num)
+
+
+
+    async def restart_tasks(self):
+        await self.bot.wait_until_ready()
+        mutes = await self.bot.db["DiscordBot"]["Mutes"].find({"ended": False}).to_list(length=500)
+        guild = self.bot.get_guild(self.bot.pm_discord["pm_server"])
+        for mute in mutes:
+            member = guild.get_member(mute["user"])
+            await self.handle_mute(mute, member)
+
+
+    async def unmute(self, mute_obj, member, muted_role):
+        await member.remove_roles(muted_role)
+        embed = Embed(title="You have been unmuted.")
+        try:
+            await member.send(embed=embed)
+        except:
+            pass
+
+        self.bot.db["DiscordBot"]["Mutes"].update_one({"_id": mute_obj["_id"]}, {"$set": {"ended": True}})
+        return
+
+
+    async def handle_mute(self, mute_obj, member: discord.Member):
+        now = datetime.utcnow()
+        muted_role = member.guild.get_role(self.bot.pm_discord["muted_role"])
+
+        if now > mute_obj["end_time"]:
+            await self.unmute(mute_obj, member, muted_role)
+            return
+
+        await asyncio.sleep((mute_obj["end_time"] - now).total_seconds())
+
+        await self.unmute(mute_obj, member, muted_role)
+
+
     @commands.Cog.listener()
     async def on_member_join(self, member):
         if member.guild.id != self.bot.pm_discord["pm_server"]:
             return
+
+        welcome_channel = member.guild.get_channel(self.bot.pm_discord["welcome_channel"])
+
+        result = await self.bot.db["DiscordBot"]["Users"].find_one({"user": member.id})
+
+
+        if not result:
+            await self.bot.db["DiscordBot"]["Users"].insert_one({"user": member.id, "join_count": 0})
+            count = 1
+        else:
+            count = result["join_count"] + 1
+
+        await self.bot.db["DiscordBot"]["Users"].update_one({"user": member.id}, {"$inc": {"join_count": 1}})
+
+        embed = Embed(
+            title = f"{member} joined the server.",
+            description = f"This is the {inf.ordinal(count)} time they have joined the server.\n"\
+            f"Their account is {(datetime.utcnow() - member.created_at).days} days old."
+        )
+
+        embed.set_thumbnail(url=member.avatar_url)
+        embed.set_footer(text=f"ID: {member.id}")
+
+        await welcome_channel.send(embed=embed)
 
         incorrect_attempts = 0
         while True:
@@ -109,6 +177,20 @@ class Moderation(commands.Cog):
             description="You have gained access to the rest of the server."
         )
         await message.reply(embed=embed)
+
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member):
+        if member.guild.id != self.bot.pm_discord["pm_server"]:
+            return
+
+        welcome_channel = member.guild.get_channel(self.bot.pm_discord["welcome_channel"])
+
+        embed = Embed(title = f"{member} left the server.",)
+        embed.set_footer(text=f"ID: {member.id}")
+        embed.set_thumbnail(url=member.avatar_url)
+
+        await welcome_channel.send(embed=embed)
 
 
     @commands.has_guild_permissions(kick_members=True)
@@ -443,6 +525,101 @@ class Moderation(commands.Cog):
 
         embed = Embed(title = f"Successfully unbanned {user}.")
         await ctx.reply(embed=embed)
+
+
+    @commands.command()
+    @commands.has_guild_permissions(kick_members=True)
+    async def mute(self, ctx, member: Member = None, *mute_periods):
+        time_periods = {
+            "s": (1, "second(s)"),
+            "m": (60, "minute(s)"),
+            "h": (3600, "hour(s)"),
+            "d": (86400, "day(s)"),
+            "w": (604800, "week(s)")
+        }
+        
+        if mute_periods:
+            total_time = 0
+            for time in mute_periods:
+                time_period = time[-1]
+
+                if not time_period in time_periods:
+                    embed = Embed(
+                        title = "Couldn't parse time value!",
+                        description = f"Please format your command like so:\n```{self.bot.command_prefix}mute QuaKe 1d 12h```"
+                    )
+                    await ctx.reply(embed=embed)
+                    return
+                
+                try:
+                    num = float(time.strip("smhdw"))
+                except ValueError:
+                    embed = Embed(
+                        title = "Couldn't parse time value!",
+                        description = f"Please format your command like so:\n```{self.bot.command_prefix}mute QuaKe 1d 12h```"
+                    )
+                    await ctx.reply(embed=embed)
+                    return
+
+                total_time += num * time_periods[time_period][0]         
+
+        if total_time < 1:
+            embed = Embed(
+                title = "The amount of time muted must be at least 1 second!",
+                colour=discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+
+
+        if total_time > 604800:
+            embed = Embed(
+                title = "The maximum amount of mute time is 1 week!",
+                colour=discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        mute_object = {
+            "_id": str(uuid1()),
+            "user": member.id,
+            "mod": ctx.author.id,
+            "start_time": datetime.utcnow(),
+            "end_time": (datetime.utcnow() + timedelta(seconds=total_time)) if mute_periods else "infinite",
+            "ended": False
+        }
+
+        guild = self.bot.get_guild(self.bot.pm_discord["pm_server"])
+        muted_role = guild.get_role(self.bot.pm_discord["muted_role"])
+
+        await member.add_roles(muted_role)
+        await self.bot.db["DiscordBot"]["Mutes"].insert_one(mute_object)
+
+        if not mute_periods:
+            embed = Embed(title = f"{member} has been muted until further notice.")
+            await ctx.reply(embed=embed)
+
+            embed = Embed(title = f"You have been muted until further notice.")
+            await member.send(embed=embed)
+            return
+
+        asyncio.create_task(self.handle_mute(mute_object, member))
+
+        time_keys = list(time_periods)
+        for count, time_period in enumerate(time_keys):
+            if time_periods[time_period][0] > total_time:
+                message = f"been muted for {self.convert_float(round(total_time / time_periods[time_keys[count - 1]][0], 2))} {time_periods[time_keys[count - 1]][1]}."
+                break
+            elif time_periods[time_period][0] == total_time:
+                message = f"been muted for {self.convert_float(round(total_time / time_periods[time_keys[count]][0], 2))} {time_periods[time_keys[count]][1]}."
+                break
+
+        embed = Embed(title = f"You have {message}")
+        await member.send(embed=embed)
+
+        embed = Embed(title=f"{member} has {message}") 
+        await ctx.reply(embed=embed)
+
 
 
 def setup(bot):
