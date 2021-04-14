@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 import asyncio
 from utils import Embed
 import os
-from uuid import uuid1
+from uuid import uuid4
 from utils import Member
 from datetime import datetime, timedelta
 from math import ceil
@@ -212,7 +212,7 @@ class Moderation(commands.Cog):
             return
 
         warn_object = {
-            "_id": str(uuid1()),
+            "_id": str(uuid4()),
             "user": member.id,
             "mod": ctx.author.id,
             "reason": reason,
@@ -529,7 +529,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_guild_permissions(kick_members=True)
     async def mute(self, ctx, member: Member = None, *mute_periods):
-        if not user_id:
+        if not member:
             embed = Embed(
                 title = "You need to tell me who to mute!",
                 colour = discord.Colour.red()
@@ -589,7 +589,7 @@ class Moderation(commands.Cog):
             return
 
         mute_object = {
-            "_id": str(uuid1()),
+            "_id": str(uuid4()),
             "user": member.id,
             "mod": ctx.author.id,
             "start_time": datetime.utcnow(),
@@ -630,8 +630,8 @@ class Moderation(commands.Cog):
 
 
 @commands.command()
-async def unmute(self, ctx, *, member: Member = None)
-    if not user_id:
+async def unmute(self, ctx, *, member: Member = None):
+    if not member:
         embed = Embed(
             title = "You need to tell me who to unmute!",
             colour = discord.Colour.red()
@@ -639,7 +639,7 @@ async def unmute(self, ctx, *, member: Member = None)
         await ctx.reply(embed=embed)
         return
 
-
+    update_query = self.bot.db["DiscordBot"]["Mutes"].update_many({"user": member.id})
 
 
 
