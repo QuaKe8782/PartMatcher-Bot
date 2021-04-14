@@ -37,7 +37,7 @@ class PartInput(commands.Cog):
         channel = guild.get_channel(self.bot.pm_discord["verification_channel"])
         for sub in await submissions.to_list(length=1000):
             message = await channel.fetch_message(sub["message_id"])
-            await self.handle_submission(message, sub)
+            asyncio.create_task(self.handle_submission(message, sub))
 
 
     def gen_id(self, length):
@@ -293,7 +293,7 @@ class PartInput(commands.Cog):
         new_part["message_id"] = message.id
         await self.bot.db["DiscordBot"]["Submissions"].insert_one(new_part)
 
-        await asyncio.create_task(self.handle_submission(message, new_part))
+        asyncio.create_task(self.handle_submission(message, new_part))
 
 
     @partmatcher.command()
