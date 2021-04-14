@@ -43,14 +43,13 @@ class Moderation(commands.Cog):
         return str(num)
 
 
-
     async def restart_tasks(self):
         await self.bot.wait_until_ready()
         mutes = await self.bot.db["DiscordBot"]["Mutes"].find({"ended": False}).to_list(length=500)
         guild = self.bot.get_guild(self.bot.pm_discord["pm_server"])
         for mute in mutes:
             member = guild.get_member(mute["user"])
-            await self.handle_mute(mute, member)
+            asyncio.create_task(self.handle_mute(mute, member))
 
 
     async def unmute(self, mute_obj, member, muted_role):
@@ -619,7 +618,6 @@ class Moderation(commands.Cog):
 
         embed = Embed(title=f"{member} has {message}") 
         await ctx.reply(embed=embed)
-
 
 
 def setup(bot):
