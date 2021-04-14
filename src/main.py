@@ -22,7 +22,9 @@ bot.pm_discord = {
     "pm_server": int(config.get("Discord", "pm_server")),
     "verified_role": int(config.get("Discord", "verified_role")),
     "verification_channel": int(config.get("Discord", "verification_channel")),
-    "member_role": int(config.get("Discord", "member_role"))
+    "member_role": int(config.get("Discord", "member_role")),
+    "muted_role": int(config.get("Discord", "muted_role")),
+    "welcome_channel": int(config.get("Discord", "welcome_channel"))
 }
 
 
@@ -152,4 +154,5 @@ def main():
     bot.run(config.get("Discord", "token"))
 
 
-main()
+if __name__ == "__main__":
+    main()
