@@ -529,6 +529,15 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_guild_permissions(kick_members=True)
     async def mute(self, ctx, member: Member = None, *mute_periods):
+        if not user_id:
+            embed = Embed(
+                title = "You need to tell me who to mute!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+
+
         time_periods = {
             "s": (1, "second(s)"),
             "m": (60, "minute(s)"),
@@ -618,6 +627,20 @@ class Moderation(commands.Cog):
 
         embed = Embed(title=f"{member} has {message}") 
         await ctx.reply(embed=embed)
+
+
+@commands.command()
+async def unmute(self, ctx, *, member: Member = None)
+    if not user_id:
+    embed = Embed(
+        title = "You need to tell me who to unmute!",
+        colour = discord.Colour.red()
+    )
+    await ctx.reply(embed=embed)
+    return
+
+
+
 
 
 def setup(bot):
