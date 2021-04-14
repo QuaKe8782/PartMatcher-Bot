@@ -632,12 +632,12 @@ class Moderation(commands.Cog):
 @commands.command()
 async def unmute(self, ctx, *, member: Member = None)
     if not user_id:
-    embed = Embed(
-        title = "You need to tell me who to unmute!",
-        colour = discord.Colour.red()
-    )
-    await ctx.reply(embed=embed)
-    return
+        embed = Embed(
+            title = "You need to tell me who to unmute!",
+            colour = discord.Colour.red()
+        )
+        await ctx.reply(embed=embed)
+        return
 
 
 
