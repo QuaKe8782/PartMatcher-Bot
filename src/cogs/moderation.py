@@ -304,6 +304,8 @@ class Moderation(commands.Cog):
 """,                
                     inline = False
                 )
+                embed.set_footer(text=f"ID: {member.id}")
+
 
             embeds.append(embed)
 
@@ -668,6 +670,7 @@ class Moderation(commands.Cog):
 
 
     @commands.command()
+    @commands.has_guild_permissions(ban_members=True)
     async def unmute(self, ctx, *, member: Member = None):
         if not member:
             embed = Embed(
@@ -699,6 +702,7 @@ class Moderation(commands.Cog):
 
 
     @commands.command()
+    @commands.has_guild_permissions(ban_members=True)
     async def mutes(self, ctx, *, member: Member):
         if not member:
             embed = Embed(
@@ -729,7 +733,8 @@ class Moderation(commands.Cog):
     **Moderator:** <@{mute["mod"]}>
     **Duration:** {message}"""
             )
-        
+        embed.set_footer(text=f"ID: {member.id}")
+
         await ctx.send(embed=embed)
 
 
