@@ -5,10 +5,9 @@ from string import ascii_lowercase, digits
 from random import choice
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
-from utils import Embed
+from utils import Embed, Member
 import os
 from uuid import uuid4
-from utils import Member
 from datetime import datetime, timedelta
 from math import ceil
 from inflect import engine
