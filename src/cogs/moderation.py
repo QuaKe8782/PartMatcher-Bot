@@ -17,7 +17,7 @@ from inflect import engine
 chars = list(ascii_lowercase + digits)
 image = ImageCaptcha(fonts=['./fonts/Comic.ttf', "./fonts/OpenSans-Bold.ttf"])
 inf = engine()
-  
+ 
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
@@ -78,6 +78,28 @@ class Moderation(commands.Cog):
 
                 await self.bot.db["DiscordBot"]["Mutes"].update_one({"_id": mute_obj["_id"]}, {"$set": {"ended": True}})
                 return
+
+
+    def format_time(self, total_time):
+        time_periods = {
+            "s": (1, "second(s)"),
+            "m": (60, "minute(s)"),
+            "h": (3600, "hour(s)"),
+            "d": (86400, "day(s)"),
+            "w": (604800, "week(s)")
+        }
+
+        time_keys = list(time_periods)
+
+        for count, time_period in enumerate(time_keys):
+            if time_periods[time_period][0] > total_time:
+                message = self.convert_float(round(total_time / time_periods[time_keys[count - 1]][0], 2)) + ' ' + time_periods[time_keys[count - 1]][1]
+                break
+            elif time_periods[time_period][0] == total_time:
+                message = self.convert_float(round(total_time / time_periods[time_keys[count]][0], 2)) + ' ' + time_periods[time_keys[count]][1]
+                break
+
+        return message
 
 
     @commands.Cog.listener()
@@ -236,6 +258,7 @@ class Moderation(commands.Cog):
             description=reason,
             colour=discord.Colour.red()
         )
+        embed.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
 
         await member.send(embed=embed)
 
@@ -265,8 +288,10 @@ class Moderation(commands.Cog):
         pages = ceil(len(warns)/5)
         for i in range(pages):
             section_warns = warns[i * 5: i * 5 + 5]
-            embed = Embed(
-                title=f"Showing warns {i * 5 + 1} - {i * 5 + len(section_warns)} of {len(warns)} for {member}:"
+            embed = Embed()
+            embed.set_author(
+                name = f"Showing warns {i * 5 + 1} - {i * 5 + len(section_warns)} of {len(warns)} for {member}:",
+                icon_url = member.avatar_url
             )
 
             for warn in section_warns:
@@ -293,7 +318,7 @@ class Moderation(commands.Cog):
             if current_page >= 1:
                 reaction_list.append("◀️")
 
-            if current_page < pages:
+            if current_page < pages - 1:
                 reaction_list.append("▶️")
 
             for reaction in reaction_list:
@@ -541,11 +566,11 @@ class Moderation(commands.Cog):
             return
 
         time_periods = {
-            "s": (1, "second(s)"),
-            "m": (60, "minute(s)"),
-            "h": (3600, "hour(s)"),
-            "d": (86400, "day(s)"),
-            "w": (604800, "week(s)")
+            "s": 1,
+            "m": 60,
+            "h": 3600,
+            "d": 86400,
+            "w": 604800,
         }
         
         if mute_periods:
@@ -571,7 +596,7 @@ class Moderation(commands.Cog):
                     await ctx.reply(embed=embed)
                     return
 
-                total_time += num * time_periods[time_period][0]         
+                total_time += num * time_periods[time_period]  
 
         if total_time < 1:
             embed = Embed(
@@ -593,16 +618,7 @@ class Moderation(commands.Cog):
 
         mute = await self.bot.db["DiscordBot"]["Mutes"].find_one({"user": member.id, "ended": False})
 
-
-        time_keys = list(time_periods)
-
-        for count, time_period in enumerate(time_keys):
-            if time_periods[time_period][0] > total_time:
-                message = self.convert_float(round(total_time / time_periods[time_keys[count - 1]][0], 2)) + ' ' + time_periods[time_keys[count - 1]][1]
-                break
-            elif time_periods[time_period][0] == total_time:
-                message = self.convert_float(round(total_time / time_periods[time_keys[count]][0], 2)) + ' ' +time_periods[time_keys[count]][1]
-                break
+        message = self.format_time(total_time)
 
         # checks if member is already muted
         if mute:
@@ -618,7 +634,6 @@ class Moderation(commands.Cog):
             await ctx.reply(embed=embed)
 
             return
-
 
         mute_object = {
             "_id": str(uuid4()),
@@ -652,18 +667,70 @@ class Moderation(commands.Cog):
         await ctx.reply(embed=embed)
 
 
-@commands.command()
-async def unmute(self, ctx, *, member: Member = None):
-    if not member:
-        embed = Embed(
-            title = "You need to tell me who to unmute!",
-            colour = discord.Colour.red()
-        )
+    @commands.command()
+    async def unmute(self, ctx, *, member: Member = None):
+        if not member:
+            embed = Embed(
+                title = "You need to tell me who to unmute!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        update_query = await self.bot.db["DiscordBot"]["Mutes"].update_one({"user": member.id, "ended": False}, {"$set": {"ended": True}})
+
+
+        if not update_query.modified_count:
+            embed = Embed(
+                title = "That member is not muted!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        muted_role = ctx.guild.get_role(self.bot.pm_discord["muted_role"])
+        await member.remove_roles(muted_role)
+
+        embed = Embed(title="You have been unmuted.")
+        await member.send(embed=embed)
+
+        embed = Embed(title=f"Unmuted {member}.")
         await ctx.reply(embed=embed)
-        return
 
-    update_query = self.bot.db["DiscordBot"]["Mutes"].update_many({"user": member.id})
 
+    @commands.command()
+    async def mutes(self, ctx, *, member: Member):
+        if not member:
+            embed = Embed(
+                title = "You need to tell me which member's mutes to show!",
+                colour = discord.Colour.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        mutes = await self.bot.db["DiscordBot"]["Mutes"].find({"user": member.id}).to_list(length=50)
+
+        if not mutes:
+            embed = Embed(title=f"{member} has no mutes saved.")
+            await ctx.reply(embed=embed)
+            return
+
+        embed = Embed()
+        embed.set_author(name=f"Mutes for {member}:", icon_url=member.avatar_url)
+
+        for mute in mutes:
+            total_time = (mute["end_time"] - mute["start_time"]).total_seconds()
+
+            message = self.format_time(total_time)
+
+            embed.add_field(
+                name = mute["start_time"].strftime("%c"),
+                value = f"""\
+    **Moderator:** <@{mute["mod"]}>
+    **Duration:** {message}"""
+            )
+        
+        await ctx.send(embed=embed)
 
 
 def setup(bot):
