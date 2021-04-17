@@ -1,11 +1,12 @@
 from configparser import ConfigParser
 import discord
 from discord.ext import commands
-from os import listdir
+from os import listdir, remove
 from utils import Embed
 from motor.motor_asyncio import AsyncIOMotorClient
 import traceback
 import asyncio
+import os
 
 
 config = ConfigParser()
@@ -114,7 +115,7 @@ async def send_rules_and_roles():
             title = "PartMatcher Links",
             description = '\n\n'.join([f"[{link}]({links[link]})" for link in links])
         )
-    ]
+    ] 
 
     for embed in embeds:
         await channel.send(embed=embed)
@@ -142,6 +143,10 @@ async def reload(ctx, cog_name):
 
 
 def main():
+    for file in listdir("captchas"):
+        if not file.endswith(".png"):
+            continue
+        os.remove("./captchas/" + file)
     for file in listdir("cogs"):
         if not file.endswith(".py"):
             continue
