@@ -6,6 +6,11 @@ import asyncio
 from random import choice
 from string import ascii_letters, digits
 from datetime import datetime, timedelta
+import requests
+from io import BytesIO
+from os import path
+from uuid import uuid4
+from PIL import Image
 
 
 with open("part_spec_models.json") as file:
@@ -21,10 +26,12 @@ keywords = {
     "stop | exit | cancel": "Cancels the submission process."
 }
 
+image_formats = ["png", ".pg", "jpeg", "webp"]
+
 chars = list(ascii_letters + digits)
 
 
-class PartInput(commands.Cog):
+class Parts(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         bot.loop.create_task(self.restart_tasks())
@@ -56,12 +63,43 @@ class PartInput(commands.Cog):
         return result_dict
 
 
+    def get_image(self, url):
+        try:
+            response = requests.get(url)
+        except requests.exceptions.ConnectionError:
+            return None, None
+
+        image_bytes = BytesIO(response.content)
+        image_id = str(uuid4())
+        image_filename = f"{image_id}{path.splitext(url)[1].split('?')[0]}"
+
+        # image downscaling code: makes sure images aren't too high resolution
+        img = Image.open(image_bytes)
+        downscale_size = 1024, 1024
+
+        img.thumbnail(downscale_size, Image.ANTIALIAS)
+
+        byte_array = BytesIO()
+        img.save(byte_array, format=img.format)
+        out_bytes = byte_array.getvalue()
+
+        return out_bytes, image_filename
+
+
     async def submit_part(self, part_dict):
         while True:
             new_id = self.gen_id(6)
             if not await self.bot.db["PartsDB"]["Parts"].find_one({"part_id": new_id}):
                 part_dict["part_id"] = new_id
                 part_dict.pop("message_id", None)
+
+                filenames = []
+
+                for image_url in part_dict["Images"]:
+                    image_bytes, image_filename = self.get_image(image_url)
+                    await self.bot.grid.upload_from_stream(image_filename, image_bytes)
+                    filenames.append(image_filename)
+
                 await self.bot.db["PartsDB"]["Parts"].insert_one(part_dict)
                 break
         return new_id
@@ -126,6 +164,43 @@ class PartInput(commands.Cog):
             if category.startswith("_"):
                 continue
 
+            if category == "Images":
+                image_urls = []
+
+                embed = Embed(
+                    title = "Upload images of the part:",
+                    description = f"When you're finished, send `done` in the chat.\nSupported image formats: `{' | '.join(image_formats)}`"
+                )
+                await ctx.reply(embed=embed)
+
+                check = lambda m: m.author == ctx.author and m.channel == ctx.channel
+
+                while True:
+                    try:
+                        message = await self.bot.wait_for("message", check=check, timeout=60)
+                    except asyncio.TimeoutError:
+                        embed = Embed(title="You took too long to respond! Cancelling submit request.")
+                        await ctx.reply(embed=embed)
+                        raise MessageTimeout()
+
+                    if message.content.lower() == "done":
+                        break
+
+                    if not message.attachments:
+                        continue
+
+                    if any([a.filename.split('.')[-1] in image_formats for a in message.attachments]):
+                        await message.add_reaction("✅")
+                    else:
+                        continue
+
+                    for attachment in message.attachments:
+                        if not attachment.filename.split('.')[-1] in image_formats:
+                            continue
+                        image_urls.append(attachment.url)
+
+
+
             expected_value = assign_dict[assign_key][category]
             examples = []
 
@@ -155,7 +230,7 @@ class PartInput(commands.Cog):
 
             prev_message = await ctx.reply(embed=embed)
 
-            def check(m): return m.author == ctx.author and m.channel == ctx.channel
+            check = lambda m: m.author == ctx.author and m.channel == ctx.channel
 
             try:
                 message = await self.bot.wait_for("message", check=check, timeout=60)
@@ -196,7 +271,7 @@ class PartInput(commands.Cog):
             title="What part type would you like to submit?",
             description=' '.join([f"`{part}`" for part in part_spec_models if not part.startswith("_")])
         )
-        def check(m): return m.author == ctx.author and m.channel == ctx.channel
+        check = lambda m: m.author == ctx.author and m.channel == ctx.channel
 
         prev_msg = await ctx.reply(embed=embed)
         embed.title = "That's is not a valid part type! Please choose from the below types."
@@ -333,4 +408,4 @@ class PartInput(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(PartInput(bot))
+    bot.add_cog(Parts(bot))
