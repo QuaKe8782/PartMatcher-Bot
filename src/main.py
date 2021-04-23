@@ -3,10 +3,10 @@ import discord
 from discord.ext import commands
 from os import listdir, remove
 from utils import Embed
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 import traceback
 import asyncio
-import os
+from help_command import Help
 
 
 config = ConfigParser()
@@ -14,11 +14,14 @@ config.read("./config.ini")
 
 
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix=config.get("Bot", "prefix"), intents=intents, case_insensitive=True)
+bot = commands.Bot(command_prefix=config.get("Bot", "prefix"),
+                   intents=intents, case_insensitive=True)
+bot.help_command = Help()
 
 
 # "botvars"
 bot.db = AsyncIOMotorClient(config.get("MongoDB", "connection_string"))
+bot.grid = AsyncIOMotorGridFSBucket(bot.db["Files"])
 bot.pm_discord = {
     "pm_server": int(config.get("Discord", "pm_server")),
     "verified_role": int(config.get("Discord", "verified_role")),
@@ -34,8 +37,8 @@ production_cogs = []
 
 async def report_error(ctx, error):
     embed = Embed(
-        title = "Error",
-        description = f"```{''.join(traceback.TracebackException.from_exception(error).format())[:2000]}```"
+        title="Error",
+        description=f"```{''.join(traceback.TracebackException.from_exception(error).format())[:2000]}```"
     )
 
     await ctx.send(embed=embed)
@@ -52,21 +55,22 @@ async def on_command_error(ctx, error):
         await report_error(ctx, error)
     if isinstance(error, commands.MemberNotFound):
         embed = Embed(
-            title = "Member Not Found",
-            description = "Unable to find that member. Perhaps you made a typo?",
-            colour = discord.Colour.red()
+            title="Member Not Found",
+            description="Unable to find that member. Perhaps you made a typo?",
+            colour=discord.Colour.red()
         )
         await ctx.reply(embed=embed)
         return
     if isinstance(error, commands.MissingPermissions):
         embed = Embed(
-            title = "Missing Permissions",
-            description = "You don't have the permissions necessary to use that command!",
-            colour = discord.Colour.red()
+            title="Missing Permissions",
+            description="You don't have the permissions necessary to use that command!",
+            colour=discord.Colour.red()
         )
         await ctx.reply(embed=embed)
         return
     await report_error(ctx, error)
+
 
 async def send_rules_and_roles():
     server = bot.get_guild(809900131494789120)
@@ -104,18 +108,21 @@ async def send_rules_and_roles():
 
     embeds = [
         Embed(
-            title = "PartMatcher Discord Rules",
-            description = '\n\n'.join([f"**{count + 1}**. {rule}" for count, rule in enumerate(rules)])
+            title="PartMatcher Discord Rules",
+            description='\n\n'.join(
+                [f"**{count + 1}**. {rule}" for count, rule in enumerate(rules)])
         ),
         Embed(
-            title = "PartMatcher Discord Roles",
-            description = '\n\n'.join([f"**<@&{role}> -** {roles[role]}" for role in roles])
+            title="PartMatcher Discord Roles",
+            description='\n\n'.join(
+                [f"**<@&{role}> -** {roles[role]}" for role in roles])
         ),
         Embed(
-            title = "PartMatcher Links",
-            description = '\n\n'.join([f"[{link}]({links[link]})" for link in links])
+            title="PartMatcher Links",
+            description='\n\n'.join(
+                [f"[{link}]({links[link]})" for link in links])
         )
-    ] 
+    ]
 
     for embed in embeds:
         await channel.send(embed=embed)
@@ -124,7 +131,7 @@ async def send_rules_and_roles():
 @bot.event
 async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="PartMatcher"))
-    #await send_rules_and_roles()
+    # await send_rules_and_roles()
 
 
 @bot.command(aliases=["re"])
@@ -146,7 +153,7 @@ def main():
     for file in listdir("captchas"):
         if not file.endswith(".png"):
             continue
-        os.remove("./captchas/" + file)
+        remove("./captchas/" + file)
     for file in listdir("cogs"):
         if not file.endswith(".py"):
             continue
