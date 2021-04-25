@@ -148,7 +148,7 @@ class Moderation(commands.Cog):
                 pass
             os.remove(path)
 
-            def check(m): return not m.guild and m.author == member
+            check = lambda m: not m.guild and m.author == member
 
             try:
                 message = await self.bot.wait_for("message", check=check, timeout=60)
