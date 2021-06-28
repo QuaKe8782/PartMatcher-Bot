@@ -11,6 +11,7 @@ from io import BytesIO
 from os import path
 from uuid import uuid4
 from PIL import Image
+from bson.json_util import dumps
 
 
 with open("part_spec_models.json") as file:
@@ -26,9 +27,23 @@ keywords = {
     "stop | exit | cancel": "Cancels the submission process."
 }
 
-image_formats = ["png", ".pg", "jpeg", "webp"]
+image_formats = ["png", "jpg", "jpeg", "webp"]
 
 chars = list(ascii_letters + digits)
+
+num_emojis = [
+    "1\N{variation selector-16}\N{combining enclosing keycap}",
+    "2\N{variation selector-16}\N{combining enclosing keycap}",
+    "3\N{variation selector-16}\N{combining enclosing keycap}",
+    "4\N{variation selector-16}\N{combining enclosing keycap}",
+    "5\N{variation selector-16}\N{combining enclosing keycap}",
+    "6\N{variation selector-16}\N{combining enclosing keycap}",
+    "7\N{variation selector-16}\N{combining enclosing keycap}",
+    "8\N{variation selector-16}\N{combining enclosing keycap}",
+    "9\N{variation selector-16}\N{combining enclosing keycap}",
+    "\N{keycap ten}",
+    "❌"
+]
 
 
 class Parts(commands.Cog):
@@ -86,6 +101,25 @@ class Parts(commands.Cog):
         return out_bytes, image_filename
 
 
+    def format_part(self, part):
+        embed = Embed()
+
+        for key in part:
+            if key.startswith("_"):
+                continue
+
+            if isinstance(part[key], str):
+                value = part[key]
+            elif isinstance(part[key], list):
+                value = '\n'.join(part[key])
+            elif isinstance(part[key], dict):
+                value = '\n'.join([f"• **{spec_key}:** {spec_value}" for spec_key, spec_value in part[key].items()])
+
+            embed.add_field(name=key, value=value, inline=False)
+
+        return embed
+        
+
     async def submit_part(self, part_dict):
         while True:
             new_id = self.gen_id(6)
@@ -95,14 +129,28 @@ class Parts(commands.Cog):
 
                 filenames = []
 
-                for image_url in part_dict["Images"]:
+                for image_url in part_dict["images"]:
                     image_bytes, image_filename = self.get_image(image_url)
+                    if not image_bytes:
+                        continue
                     await self.bot.grid.upload_from_stream(image_filename, image_bytes)
                     filenames.append(image_filename)
 
+                part_dict["images"] = filenames
+                id = part_dict["_id"]
+                part_dict.pop("_id")
+
+                await self.bot.db["DiscordBot"]["Submissions"].delete_one({"_id": part_dict[id]})
                 await self.bot.db["PartsDB"]["Parts"].insert_one(part_dict)
                 break
         return new_id
+
+
+    async def find_part(self, search_term, limit):
+        query = await self.bot.db["PartsDB"]["Parts"].find({"part_id": search_term}).to_list(length=limit)
+        if not query:
+            query = await self.bot.db["PartsDB"]["Parts"].find({"$text": {"$search": search_term}}).to_list(length=limit)
+        return query
 
 
     def get_verified_count(self, role_id: int, guild: discord.Guild):
@@ -126,7 +174,7 @@ class Parts(commands.Cog):
     async def handle_submission(self, message_obj: discord.Message, part_dict: dict):
         async def check_accepted():
             updated_message_obj = await message_obj.channel.fetch_message(message_obj.id)
-            if not self.is_accepted(updated_message_obj):
+            if self.is_accepted(updated_message_obj):
                 embed = Embed(title="Submission declined.", colour=discord.Colour.red())
             else:
                 embed = Embed(title="Submission accepted.")
@@ -138,7 +186,7 @@ class Parts(commands.Cog):
         
         now = datetime.utcnow()
 
-        submission_time = part_dict["_created_at"] + timedelta(days=2)
+        submission_time = part_dict["_created_at"] + timedelta(days=0)
 
         if submission_time < now:
             await check_accepted()
@@ -164,7 +212,7 @@ class Parts(commands.Cog):
             if category.startswith("_"):
                 continue
 
-            if category == "Images":
+            if category == "images":
                 image_urls = []
 
                 embed = Embed(
@@ -183,6 +231,15 @@ class Parts(commands.Cog):
                         await ctx.reply(embed=embed)
                         raise MessageTimeout()
 
+                    if message.content.lower() in ("stop", "exit", "cancel", "terminate", "break", "arrêter"):
+                        embed = Embed(title="Cancelled part submission")
+                        await ctx.reply(embed=embed)
+                        raise UserCancel()
+
+                    if message.content.lower() in ("continue", "skip", "next"):
+                        assign_object[category] = "?"
+                        break
+
                     if message.content.lower() == "done":
                         break
 
@@ -199,6 +256,8 @@ class Parts(commands.Cog):
                             continue
                         image_urls.append(attachment.url)
 
+                assign_object[assign_key] = image_urls
+                continue
 
 
             expected_value = assign_dict[assign_key][category]
@@ -214,7 +273,7 @@ class Parts(commands.Cog):
             else:
                 raise ValueError("Invalid example value!")
 
-            embed = Embed(title=f"Category - {category}")
+            embed = Embed(title=f"Category - {category.title() if category[0].islower() else category}")
 
             embed.add_field(
                 name="Input Type",
@@ -315,23 +374,11 @@ class Parts(commands.Cog):
             except (UserCancel, MessageTimeout):
                 return
 
-        embed = Embed(title="Part Selection Completed")
-
         new_part["Specs"].pop("_note", None)
         new_part["Type"] = variation
 
-        for key in new_part:
-            if key.startswith("_"):
-                continue
-
-            if isinstance(new_part[key], str):
-                value = new_part[key]
-            elif isinstance(new_part[key], list):
-                value = '\n'.join(new_part[key])
-            elif isinstance(new_part[key], dict):
-                value = '\n'.join([f"• **{spec_key}:** {spec_value}" for spec_key, spec_value in new_part[key].items()])
-
-            embed.add_field(name=key, value=value, inline=False)
+        embed = self.format_part(new_part)
+        embed.title = "Part Selection Completed"
     
         embed.set_footer(text="Send 'confirm' in the chat in the next 60 seconds to confirm your submission.")
 
@@ -372,6 +419,50 @@ class Parts(commands.Cog):
 
 
     @partmatcher.command()
+    async def edit(self, ctx, *, search_term):
+        parts = await self.find_part(search_term, 10)
+
+        if not parts:
+            embed = Embed(
+                title = "Couldn't find that part.",
+                description = "Unable to find a part with a name or ID similiar to that."
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        if len(parts) == 1:
+            part = parts[0]
+        else:
+            embed = Embed(
+                title = f"Search results for \"{search_term}\":",
+                description = "React with the number corresponding to the part you want to edit:\n\n" +
+                '\n'.join([f"**{count + 1}.** {part['manufacturer']} {part['name']}" for count, part in enumerate(parts)])
+            )
+            message = await ctx.reply(embed=embed)
+
+            for reaction in num_emojis[:len(parts)]:
+                await message.add_reaction(reaction)
+            await message.add_reaction(num_emojis[-1])
+
+
+            check = lambda r, u: r.message == message and u == ctx.author and str(r.emoji) in num_emojis
+            try:
+                reaction, _ = await self.bot.wait_for("reaction_add", check=check, timeout=60)
+            except asyncio.TimeoutError:
+                await message.clear_reactions()
+                return
+
+            if str(reaction.emoji) == num_emojis[-1]:
+                await message.delete()
+                return
+
+            part = parts[num_emojis.index(str(reaction.emoji))]
+
+
+        await ctx.send(f"```json\n{dumps(part, indent=4)}```")
+
+
+    @partmatcher.command()
     async def info(self, ctx, *, search_term):
         query = await self.bot.db["PartsDB"]["Parts"].find({"$text": {"$search": search_term}}).to_list(length=10)
 
@@ -384,7 +475,7 @@ class Parts(commands.Cog):
         else:
             embed = Embed(
                 title = f"Results for '{search_term}':",
-                description = '\n'.join([part["name"] for part in query])
+                description = '\n'.join([f"{part['manufacturer']} {part['name']}" for part in query])
             )
 
         await ctx.send(embed=embed)

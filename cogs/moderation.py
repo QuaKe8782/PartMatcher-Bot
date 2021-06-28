@@ -12,11 +12,14 @@ from datetime import datetime, timedelta
 from math import ceil
 from inflect import engine
 
-
 chars = list(ascii_lowercase + digits)
 image = ImageCaptcha(fonts=['./fonts/Comic.ttf', "./fonts/OpenSans-Bold.ttf"])
 inf = engine()
- 
+
+# executable file formats that are best banned in a server
+banned_file_formats = ['bat', 'bin', 'cmd', 'com', 'cpl', 'exe', 'gadget', 'inf1', 'ins', 'inx', 'isu', 'job', 'jse', 'lnk', 'msc', 'msi', 'msp', 'mst', 'paf', 'pif', 'ps1', 'reg', 'rgs', 'scr', 'sct', 'shb', 'shs', 'u3p', 'vb', 'vbe', 'vbs', 
+'vbscript', 'ws', 'wsf', 'wsh']
+
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
@@ -110,7 +113,6 @@ class Moderation(commands.Cog):
 
         result = await self.bot.db["DiscordBot"]["Users"].find_one({"user": member.id})
 
-
         if not result:
             await self.bot.db["DiscordBot"]["Users"].insert_one({"user": member.id, "join_count": 0})
             count = 1
@@ -200,6 +202,26 @@ class Moderation(commands.Cog):
             description="You have gained access to the rest of the server."
         )
         await message.reply(embed=embed)
+
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if not message.attachments:
+            return
+
+        for attachment in message.attachments:
+            extension = os.path.splitext(attachment.filename)[1]
+            if extension.strip(".") in banned_file_formats:
+                try:
+                    await message.delete()
+                    embed = Embed(
+                        title = "That file extension isn't allowed here!",
+                        description = f"`{extension}` files have been identified as a potential threat to server members."
+                    )
+                    await message.author.send(embed=embed)
+                except (discord.ext.errors.Forbidden, discord.ext.errors.MissingPermissions):
+                    pass
+
 
 
     @commands.Cog.listener()
